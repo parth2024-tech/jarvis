@@ -1,0 +1,12 @@
+# Search query rotation. {month} and {year} substituted at runtime.
+queries:
+  - "AI tool free credits startups {month} {year}"
+  - "GitHub Copilot free {year} student"
+  - "Claude Pro free access researcher"
+  - "OpenAI API credits startup program"
+  - "Cursor IDE student discount"
+  - "Perplexity Pro free education"
+  - "new AI tool launch free tier {month} {year}"
+  - "LLM API free credits {year}"
+  - "AI startup grant application open"
+  - "ChatGPT Plus discount {month} {year}"

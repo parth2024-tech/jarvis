@@ -1,0 +1,54 @@
+# All scrape/feed targets. Edit freely — agent picks these up each run.
+
+official_pages:
+  - https://education.github.com/pack/offers
+  - https://aws.amazon.com/activate/
+  - https://www.microsoft.com/en-us/startups
+  - https://cloud.google.com/startup
+  - https://www.nvidia.com/en-us/startups/
+  - https://openai.com/for-researchers
+  - https://www.anthropic.com/
+  - https://www.notion.so/startups
+  - https://vercel.com/pricing
+  - https://replit.com/pricing
+  - https://cursor.com/students
+  - https://www.jetbrains.com/community/education/
+
+partner_perks:
+  - https://stripe.com/atlas
+  - https://www.brex.com/product/perks
+  - https://mercury.com/perks
+  - https://ramp.com/perks
+  - https://www.deel.com/blog/startup-perks
+
+rss_feeds:
+  - https://tldr.tech/api/rss/ai
+  - https://www.deeplearning.ai/the-batch/feed/
+  - https://www.latent.space/feed
+  - https://www.anthropic.com/news/rss.xml
+  - https://openai.com/blog/rss.xml
+  - https://mistral.ai/news/feed.xml
+  - https://www.ycombinator.com/blog/rss
+  - https://a16z.com/feed/
+  - https://huggingface.co/blog/feed.xml
+
+reddit_subs:
+  - MachineLearning
+  - OpenAI
+  - SideProject
+  - Entrepreneur
+  - GithubStudentPack
+
+hackernews_queries:
+  - "AI free credits"
+  - "AI startup grant"
+  - "free API credits"
+
+producthunt_topics:
+  - artificial-intelligence
+  - developer-tools
+
+discord_servers:
+  # Provide guild_id and channel_id for #announcements-style channels
+  # - { name: "Anthropic", guild_id: "...", channel_ids: ["..."] }
+  []
