@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. // STARK INDUSTRIES OPERATING LAYER</title>
+    <style>
+        :root {
+            --neon-gold: #ffb703;
+            --arc-blue: #00f0ff;
+            --arc-glow: rgba(0, 240, 255, 0.4);
+            --danger-red: #ff3366;
+            --success-green: #00ff88;
+            --dark-bg: #030712;
+            --panel-bg: rgba(3, 15, 30, 0.88);
+            --border-glow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--arc-blue);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.06) 0%, transparent 75%),
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 35px 35px, 35px 35px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--arc-blue);
+            padding-bottom: 10px;
+            box-shadow: 0 5px 20px rgba(0, 240, 255, 0.15);
+        }
+
+        .system-status {
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 6px var(--arc-blue);
+        }
+
+        .hud-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--neon-gold);
+            text-shadow: 0 0 15px rgba(255, 183, 3, 0.6);
+            text-align: center;
+        }
+
+        .quick-bar {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            padding: 8px 0;
+        }
+
+        .quick-chip {
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid var(--arc-blue);
+            color: #a5f3fc;
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            cursor: pointer;
+            border-radius: 2px;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .quick-chip:hover {
+            background: var(--arc-blue);
+            color: var(--dark-bg);
+            box-shadow: 0 0 12px var(--arc-blue);
+        }
+
+        .main-stage {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .hud-ring {
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            border: 1px dashed rgba(0, 240, 255, 0.25);
+            border-radius: 50%;
+            animation: spin 40s linear infinite;
+        }
+
+        .hud-ring.outer {
+            width: 620px;
+            height: 620px;
+            border: 2px dotted rgba(255, 183, 3, 0.2);
+            animation: spin-reverse 55s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        /* Dual Center: Helmet + Arc Reactor */
+        .stage-center {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .helmet-container {
+            width: 260px;
+            height: 340px;
+            position: relative;
+            filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.4));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .reactor-container {
+            width: 220px;
+            height: 220px;
+            position: relative;
+            filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.6));
+            animation: pulse-core 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes pulse-core {
+            0% { transform: scale(0.98); filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.4)); }
+            100% { transform: scale(1.02); filter: drop-shadow(0 0 35px rgba(0, 240, 255, 0.8)); }
+        }
+
+        svg { width: 100%; height: 100%; }
+
+        .glowing-eyes {
+            fill: var(--arc-blue);
+            filter: drop-shadow(0 0 10px var(--arc-blue));
+            transition: all 0.25s ease;
+        }
+
+        .speaking .glowing-eyes {
+            fill: var(--neon-gold);
+            filter: drop-shadow(0 0 25px var(--neon-gold));
+            animation: pulse-speak 0.4s infinite alternate;
+        }
+
+        @keyframes pulse-speak {
+            0% { transform: scale(0.97); }
+            100% { transform: scale(1.03); }
+        }
+
+        /* Telemetry Side Panels */
+        .side-panel {
+            position: absolute;
+            width: 280px;
+            background: var(--panel-bg);
+            border: 1px solid var(--arc-blue);
+            padding: 14px;
+            box-shadow: var(--border-glow);
+            font-size: 0.78rem;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+        }
+
+        .left-panel { left: 16px; top: 50%; transform: translateY(-50%); }
+        .right-panel { right: 16px; top: 50%; transform: translateY(-50%); }
+
+        .panel-header {
+            border-bottom: 1px solid var(--arc-blue);
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            font-weight: bold;
+            color: var(--neon-gold);
+            letter-spacing: 2px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            align-items: center;
+        }
+
+        /* Gauge Progress Bar */
+        .gauge-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 240, 255, 0.15);
+            margin-top: 2px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: var(--arc-blue);
+            transition: width 0.4s ease;
+            box-shadow: 0 0 8px var(--arc-blue);
+        }
+
+        .gauge-fill.warning { background: var(--neon-gold); box-shadow: 0 0 8px var(--neon-gold); }
+        .gauge-fill.danger { background: var(--danger-red); box-shadow: 0 0 8px var(--danger-red); }
+
+        /* Audio Visualizer Bar */
+        .visualizer-strip {
+            display: flex;
+            gap: 3px;
+            height: 24px;
+            align-items: flex-end;
+            margin-top: 6px;
+            padding: 2px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .v-bar {
+            flex: 1;
+            background: var(--arc-blue);
+            height: 20%;
+            transition: height 0.1s ease;
+        }
+
+        footer {
+            border-top: 2px solid var(--arc-blue);
+            padding-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .terminal-output {
+            background: rgba(0, 10, 22, 0.95);
+            border: 1px solid var(--arc-blue);
+            padding: 8px 12px;
+            height: 75px;
+            overflow-y: auto;
+            font-size: 0.82rem;
+            color: #a5f3fc;
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.15);
+        }
+
+        .command-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: rgba(0, 20, 40, 0.85);
+            border: 1px solid var(--arc-blue);
+            color: var(--arc-blue);
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--neon-gold);
+            box-shadow: inset 0 0 15px rgba(255, 183, 3, 0.3);
+        }
+
+        button {
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid var(--arc-blue);
+            color: var(--arc-blue);
+            padding: 8px 16px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px var(--arc-blue);
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--arc-blue);
+            color: var(--dark-bg);
+            box-shadow: 0 0 15px var(--arc-blue);
+        }
+
+        button.listening {
+            background: var(--danger-red);
+            border-color: var(--danger-red);
+            color: white;
+            box-shadow: 0 0 20px var(--danger-red);
+            animation: pulse-mic 1s infinite alternate;
+        }
+
+        @keyframes pulse-mic { 0% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .loop-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: #a5f3fc;
+            cursor: pointer;
+        }
+
+        .loop-toggle input { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="system-status" id="micStatus">MIC: STANDBY // PROTOCOL ACTIVE</div>
+        <div class="hud-title">J.A.R.V.I.S. // STARK INDUSTRIAL LAYER</div>
+        <div class="system-status" id="connStatus">LINK: WEBSOCKET ACTIVE</div>
+    </header>
+
+    <div class="quick-bar">
+        <div class="quick-chip" onclick="quickCmd('diagnostic check')">DIAGNOSTIC</div>
+        <div class="quick-chip" onclick="quickCmd('capture screen')">CAPTURE SCREEN</div>
+        <div class="quick-chip" onclick="quickCmd('volume up')">VOLUME +10%</div>
+        <div class="quick-chip" onclick="quickCmd('mute')">MUTE AUDIO</div>
+        <div class="quick-chip" onclick="quickCmd('open terminal')">LAUNCH TERMINAL</div>
+        <div class="quick-chip" onclick="quickCmd('open editor')">LAUNCH CODE</div>
+    </div>
+
+    <div class="main-stage">
+        <div class="hud-ring outer"></div>
+        <div class="hud-ring"></div>
+
+        <!-- Left Telemetry Panel -->
+        <div class="side-panel left-panel">
+            <div class="panel-header">REACTOR TELEMETRY</div>
+            <div class="data-row"><span>REACTOR STABILITY:</span> <span id="valStability" style="color:var(--neon-gold);">98.5%</span></div>
+            <div class="gauge-track"><div id="gaugeStability" class="gauge-fill" style="width:98%;"></div></div>
+
+            <div class="data-row"><span>CPU UTILIZATION:</span> <span id="valCpu">12%</span></div>
+            <div class="gauge-track"><div id="gaugeCpu" class="gauge-fill" style="width:12%;"></div></div>
+
+            <div class="data-row"><span>MEMORY USAGE:</span> <span id="valRam">5.8 GB (38%)</span></div>
+            <div class="gauge-track"><div id="gaugeRam" class="gauge-fill" style="width:38%;"></div></div>
+
+            <div class="data-row"><span>PRIMARY STORAGE:</span> <span id="valDisk">138 GB Free</span></div>
+            <div class="data-row"><span>CORE TEMPERATURE:</span> <span id="valTemp" style="color:#00ff88;">Nominal (55°C)</span></div>
+            <div class="data-row"><span>AUXILIARY POWER:</span> <span id="valBattery" style="color:var(--neon-gold);">100% (Plugged)</span></div>
+        </div>
+
+        <!-- Center Visual Stage: Helmet + Arc Reactor -->
+        <div class="stage-center">
+            <!-- Iron Man Helmet -->
+            <div class="helmet-container" id="helmet">
+                <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M200 20 C280 20 340 70 350 150 C360 230 330 340 300 420 C280 470 250 480 200 480 C150 480 120 470 100 420 C70 340 40 230 50 150 C60 70 120 20 200 20 Z" 
+                          fill="none" stroke="var(--neon-gold)" stroke-width="4" stroke-opacity="0.85"/>
+                    <path d="M200 50 C260 50 310 90 320 160 C325 210 300 320 270 390 C250 430 230 450 200 450 C170 450 150 430 130 390 C100 320 75 210 80 160 C90 90 140 50 200 50 Z" 
+                          fill="rgba(3, 15, 30, 0.75)" stroke="var(--arc-blue)" stroke-width="2"/>
+                    <path d="M110 200 L160 380 L200 410 L240 380 L290 200" fill="none" stroke="var(--arc-blue)" stroke-width="1.5" stroke-dasharray="5 3"/>
+                    <path d="M130 130 L200 160 L270 130" fill="none" stroke="var(--neon-gold)" stroke-width="2"/>
+                    <path d="M200 160 L200 290" fill="none" stroke="var(--arc-blue)" stroke-width="1.5"/>
+                    <polygon points="120,180 170,195 160,215 115,200" class="glowing-eyes"/>
+                    <polygon points="280,180 230,195 240,215 285,200" class="glowing-eyes"/>
+                    <circle cx="200" cy="90" r="12" fill="none" stroke="var(--arc-blue)" stroke-width="2"/>
+                    <circle cx="200" cy="90" r="6" fill="var(--arc-blue)" filter="drop-shadow(0 0 8px var(--arc-blue))"/>
+                </svg>
+            </div>
+
+            <!-- Stark Arc Reactor Core -->
+            <div class="reactor-container">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="var(--arc-blue)" stroke-width="3" stroke-dasharray="8 4"/>
+                    <circle cx="100" cy="100" r="75" fill="rgba(3, 15, 30, 0.9)" stroke="var(--neon-gold)" stroke-width="2"/>
+                    <!-- Reactor Coils -->
+                    <g stroke="var(--neon-gold)" stroke-width="3">
+                        <line x1="100" y1="25" x2="100" y2="40"/>
+                        <line x1="100" y1="160" x2="100" y2="175"/>
+                        <line x1="25" y1="100" x2="40" y2="100"/>
+                        <line x1="160" y1="100" x2="175" y2="100"/>
+                        <line x1="45" y1="45" x2="56" y2="56"/>
+                        <line x1="144" y1="144" x2="155" y2="155"/>
+                        <line x1="45" y1="155" x2="56" y2="144"/>
+                        <line x1="144" y1="56" x2="155" y2="45"/>
+                    </g>
+                    <!-- Palladium Arc Core -->
+                    <circle cx="100" cy="100" r="42" fill="none" stroke="var(--arc-blue)" stroke-width="4"/>
+                    <circle cx="100" cy="100" r="30" fill="rgba(0, 240, 255, 0.25)" stroke="#ffffff" stroke-width="2" filter="drop-shadow(0 0 15px var(--arc-blue))"/>
+                    <polygon points="100,75 120,115 80,115" fill="none" stroke="var(--arc-blue)" stroke-width="2"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Right Capabilities Panel -->
+        <div class="side-panel right-panel">
+            <div class="panel-header">TACTICAL SUBSYSTEMS</div>
+            <div class="data-row"><span>COGNITIVE ENGINE:</span> <span style="color:var(--neon-gold);">LLAMA 3.2 // OLLAMA</span></div>
+            <div class="data-row"><span>VECTOR MEMORY:</span> <span style="color:#00ff88;">NOMIC EMBED (768-D)</span></div>
+            <div class="data-row"><span>SYSTEM CONTROL:</span> <span>PACTL + APPS + OCR</span></div>
+            <div class="data-row"><span>SECURITY POLICY:</span> <span style="color:#00ff88;">SANDBOX ENFORCED</span></div>
+            <div class="data-row"><span>ROUND-TRIP:</span> <span id="valLatency">14ms</span></div>
+            
+            <div class="panel-header" style="margin-top:12px;">AUDIO FREQUENCY SPECTRUM</div>
+            <div class="visualizer-strip" id="visualizerStrip">
+                <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+                <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+                <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+                <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="terminal-output" id="terminalLog">
+            [SYS] J.A.R.V.I.S. Operating Layer v3.5.0 initialized.<br>
+            [JARVIS] All systems nominal, Sir. Awaiting your directive.
+        </div>
+        <div class="command-bar">
+            <button id="micBtn" onclick="toggleListening()">ACTIVATE MIC</button>
+            <input type="text" id="commandInput" placeholder="Speak directive or type command here..." autofocus>
+            <button onclick="executeCommand()">TRANSMIT</button>
+            <label class="loop-toggle">
+                <input type="checkbox" id="chkLoop" checked> Auto-Listen Loop
+            </label>
+        </div>
+    </footer>
+
+    <script>
+        const log = document.getElementById('terminalLog');
+        const input = document.getElementById('commandInput');
+        const micBtn = document.getElementById('micBtn');
+        const helmet = document.getElementById('helmet');
+        const micStatus = document.getElementById('micStatus');
+        const connStatus = document.getElementById('connStatus');
+        const chkLoop = document.getElementById('chkLoop');
+
+        // Telemetry Dials
+        const valStability = document.getElementById('valStability');
+        const gaugeStability = document.getElementById('gaugeStability');
+        const valCpu = document.getElementById('valCpu');
+        const gaugeCpu = document.getElementById('gaugeCpu');
+        const valRam = document.getElementById('valRam');
+        const gaugeRam = document.getElementById('gaugeRam');
+        const valDisk = document.getElementById('valDisk');
+        const valTemp = document.getElementById('valTemp');
+        const valBattery = document.getElementById('valBattery');
+        const valLatency = document.getElementById('valLatency');
+        const vBars = document.querySelectorAll('.v-bar');
+
+        // Web Audio API Synthesizer (Procedural Stark Sound Engine)
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playStarkChime() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                // Dual tone: 587Hz (D5) -> 880Hz (A5)
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now);
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880.0, now + 0.08);
+
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc1.start(now);
+                osc1.stop(now + 0.12);
+                osc2.start(now + 0.08);
+                osc2.stop(now + 0.35);
+            } catch(e) {}
+        }
+
+        function playSonarSweep() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1100, now);
+                osc.frequency.exponentialRampToValueAtTime(350, now + 0.28);
+
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            } catch(e) {}
+        }
+
+        // Voice Pipeline
+        let synth = window.speechSynthesis;
+        let recognition = null;
+        let isListening = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRec();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isListening = true;
+                micBtn.classList.add('listening');
+                micBtn.textContent = 'LISTENING...';
+                micStatus.textContent = 'MIC: ON // STREAMING DIRECTIVE';
+                playStarkChime();
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                input.value = transcript;
+                logMsg(transcript, true);
+                sendDirective(transcript);
+            };
+
+            recognition.onerror = function() { stopListening(); };
+            recognition.onend = function() { stopListening(); };
+        }
+
+        function toggleListening() {
+            if (!recognition) return;
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try { recognition.start(); } catch(e){}
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            micBtn.textContent = 'ACTIVATE MIC';
+            micStatus.textContent = 'MIC: STANDBY // PROTOCOL ACTIVE';
+        }
+
+        function logMsg(text, isUser = false) {
+            const time = new Date().toLocaleTimeString();
+            const color = isUser ? '#ffb703' : '#00f0ff';
+            log.innerHTML += `<br><span style="color:${color}">[${time}] ${isUser ? 'SIR > ' : 'JARVIS > '}</span>${text}`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function animateVisualizer(active) {
+            if (active) {
+                vBars.forEach(b => {
+                    const h = Math.floor(Math.random() * 85) + 15;
+                    b.style.height = h + '%';
+                });
+            } else {
+                vBars.forEach(b => { b.style.height = '15%'; });
+            }
+        }
+
+        let visInterval = null;
+
+        function speak(text) {
+            if (!synth) return;
+            synth.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            const voices = synth.getVoices();
+            // J.A.R.V.I.S. British English Voice
+            const jarvisVoice = voices.find(v => v.name.includes('UK English') || v.name.includes('Daniel') || v.name.includes('Oliver') || v.lang === 'en-GB');
+            if (jarvisVoice) utter.voice = jarvisVoice;
+
+            utter.pitch = 0.96;
+            utter.rate = 1.04;
+
+            utter.onstart = function() {
+                helmet.classList.add('speaking');
+                visInterval = setInterval(() => animateVisualizer(true), 80);
+            };
+
+            utter.onend = function() {
+                helmet.classList.remove('speaking');
+                clearInterval(visInterval);
+                animateVisualizer(false);
+
+                // Continuous full-duplex loop
+                if (chkLoop.checked && recognition && !isListening) {
+                    setTimeout(() => {
+                        try { recognition.start(); } catch(e){}
+                    }, 400);
+                }
+            };
+
+            synth.speak(utter);
+        }
+
+        async function sendDirective(query) {
+            playStarkChime();
+            try {
+                const res = await fetch('http://127.0.0.1:8080/api/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, context: 'hud' })
+                });
+                const data = await res.json();
+                valLatency.textContent = data.latency_ms + 'ms';
+                logMsg(data.response, false);
+                speak(data.response);
+            } catch (err) {
+                const fallback = "Core backend offline. Operating on localized failsafe, Sir.";
+                logMsg(fallback, false);
+                speak(fallback);
+            }
+        }
+
+        function executeCommand() {
+            const val = input.value.trim();
+            if (!val) return;
+            logMsg(val, true);
+            input.value = '';
+            sendDirective(val);
+        }
+
+        function quickCmd(text) {
+            input.value = text;
+            executeCommand();
+        }
+
+        input.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') executeCommand();
+        });
+
+        // Spacebar shortcut to trigger mic (when not typing in text box)
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' && document.activeElement !== input) {
+                e.preventDefault();
+                toggleListening();
+            }
+        });
+
+        // Live Telemetry Sync via WebSocket
+        function connectWebSocket() {
+            try {
+                const ws = new WebSocket('ws://127.0.0.1:8080/ws/stream');
+                ws.onopen = () => { connStatus.textContent = 'LINK: WEBSOCKET STREAMING'; };
+                ws.onclose = () => {
+                    connStatus.textContent = 'LINK: POLLING FALLBACK';
+                    setTimeout(connectWebSocket, 3000);
+                };
+                ws.onmessage = (evt) => {
+                    try {
+                        const msg = JSON.parse(evt.data);
+                        if (msg.type === 'telemetry_pulse' && msg.metrics) {
+                            updateTelemetryUI(msg.metrics);
+                        }
+                    } catch(e) {}
+                };
+            } catch(e) {
+                connStatus.textContent = 'LINK: HTTP FALLBACK';
+            }
+        }
+
+        function updateTelemetryUI(m) {
+            if (m.reactor_stability !== undefined) {
+                valStability.textContent = m.reactor_stability + '%';
+                gaugeStability.style.width = m.reactor_stability + '%';
+            }
+            if (m.cpu_percent !== undefined) {
+                valCpu.textContent = m.cpu_percent + '% (' + (m.cpu_count || 16) + ' cores)';
+                gaugeCpu.style.width = Math.min(100, m.cpu_percent) + '%';
+                gaugeCpu.className = m.cpu_percent > 85 ? 'gauge-fill danger' : m.cpu_percent > 60 ? 'gauge-fill warning' : 'gauge-fill';
+            }
+            if (m.ram_percent !== undefined) {
+                valRam.textContent = (m.ram_used_gb || '') + ' GB (' + m.ram_percent + '%)';
+                gaugeRam.style.width = m.ram_percent + '%';
+            }
+            if (m.disk_free_gb !== undefined) {
+                valDisk.textContent = m.disk_free_gb + ' GB Free';
+            }
+            if (m.temperature_c !== undefined && m.temperature_c !== null) {
+                valTemp.textContent = m.temperature_c + '°C';
+                valTemp.style.color = m.temperature_c > 80 ? 'var(--danger-red)' : '#00ff88';
+            }
+            if (m.battery) {
+                const plug = m.battery.power_plugged ? 'Plugged' : 'Battery';
+                valBattery.textContent = m.battery.percent + '% (' + plug + ')';
+            }
+        }
+
+        // Periodic Fallback Poll for Telemetry
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch('http://127.0.0.1:8080/api/telemetry');
+                if (res.ok) {
+                    const data = await res.json();
+                    updateTelemetryUI(data);
+                }
+            } catch(e) {}
+        }
+
+        setInterval(fetchTelemetry, 3000);
+        fetchTelemetry();
+        connectWebSocket();
+    </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+{
+  "name": "JARVIS",
+  "version": "3.5.0",
+  "description": "Industrial-grade autonomous personal AI assistant (AI operating layer) with FastAPI backend, secure sandbox execution, layered SQLite/LanceDB memory, WebSocket streaming telemetry, and cinematic Stark Industries HUD.",
+  "tech_stack": [
+    "Python 3.14.7",
+    "FastAPI (backend API server)",
+    "Uvicorn (ASGI server)",
+    "Pydantic v2 (data validation)",
+    "SQLite 3 (relational audit & interaction log)",
+    "LanceDB (vector semantic memory)",
+    "HTML5/CSS3/JS (cinematic Stark HUD)",
+    "Web Speech API (browser-native STT/TTS)",
+    "Piper/Whisper (local TTS/STT fallback)"
+  ],
+  "conventions": [
+    "All core modules are pure Python in /core/",
+    "Imports within core/ use relative module imports (e.g., from sandbox import secure_execute)",
+    "SQLite database lives in /memory/jarvis_state.db",
+    "All external commands execute through secure_execute() with regex-based security policy",
+    "Audit trail logs to /memory/audit_trail.log",
+    "All API endpoints prefixed with /api/",
+    "Telemetry endpoint returns reactor stability, CPU load, neural mesh status, memory backend, thread count, and security status"
+  ],
+  "architecture_patterns": [
+    "Single-file FastAPI app in /core/server.py with modular imports",
+    "Layered memory: SQLite for relational/audit, LanceDB for vector semantic recall",
+    "Proactive daemon threads for autonomous health monitoring",
+    "Security-first: regex-based command policy enforcement before execution",
+    "WebSocket streaming for real-time bidirectional communication"
+  ],
+  "file_structure": {
+    "core/server.py": "FastAPI backend - intent routing, SQLite persistence, WebSocket streaming",
+    "core/hermes_bridge.py": "HTTP bridge server for Hermes Agent MCP integration",
+    "core/heartbeat.py": "Proactive background daemon for system health monitoring",
+    "core/vision.py": "Multimodal screen capture for visual telemetry",
+    "core/reflection.py": "Trajectory logging and self-improving reflection storage",
+    "core/sandbox.py": "Secure command execution with regex-based security policy",
+    "ui/hud.html": "Cinematic Stark Industries HUD with dual-canvas SVG helmet, voice loop",
+    "memory/jarvis_state.db": "SQLite relational audit & interaction log",
+    "memory/audit_trail.log": "Secure execution audit trail",
+    "tests/": "Comprehensive unit and integration tests"
+  },
+  "testing_strategy": {
+    "framework": "unittest + requests",
+    "coverage_target": "80%",
+    "patterns": [
+      "Unit tests for sandbox security policy enforcement",
+      "Unit tests for secure command execution",
+      "Unit tests for reflection memory storage/retrieval",
+      "Unit tests for vision screen capture",
+      "Integration tests for FastAPI endpoints (telemetry, command, WebSocket)",
+      "Integration tests for Hermes bridge HTTP API"
+    ]
+  },
+  "deployment": {
+    "platform": "Local (self-hosted)",
+    "branch_strategy": "main -> production",
+    "environments": ["development", "production"]
+  },
+  "sprint_focus": "Continue JARVIS industrial architecture: fix sandbox timeout for test suite execution, add missing test modules (test_sandbox, test_reflection, test_vision, test_heartbeat), install LanceDB for vector memory, validate output with ASE.",
+  "sprint_skills": [
+    "lifecycle/test-driven-development",
+    "lifecycle/incremental-implementation"
+  ],
+  "never_do": [
+    "Never execute commands without security policy regex check",
+    "Never store secrets in committed files",
+    "Never use shell=True in subprocess calls - use shlex.split for safe parsing",
+    "Never allow unauthenticated database writes",
+    "Never hardcode absolute paths that differ from /home/thor/Desktop/JARVIS"
+  ],
+  "preferred_patterns": [
+    "Use regex-based security policy for all command execution",
+    "Use parameterized SQL queries to prevent injection",
+    "Use shlex.split for safe command parsing",
+    "Log all sandboxed executions to audit_trail.log",
+    "Use SQLite for persistence, LanceDB for vector memory"
+  ],
+  "agent_skills": {
+    "directory": "/home/thor/skiils",
+    "default_skills": [
+      "lifecycle/using-agent-skills",
+      "lifecycle/context-engineering"
+    ],
+    "mandatory_skills": {
+      "api": "lifecycle/api-and-interface-design",
+      "auth": "lifecycle/security-and-hardening"
+    },
+    "session_reporting_preference": true
+  }
+}

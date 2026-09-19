@@ -1,9 +1,0 @@
-.env
-__pycache__/
-*.pyc
-*.log
-.venv/
-venv/
-.DS_Store
-*.csv
-!config/*.csv
