@@ -60,8 +60,8 @@
   },
   "sprint_focus": "Continue JARVIS industrial architecture: fix sandbox timeout for test suite execution, add missing test modules (test_sandbox, test_reflection, test_vision, test_heartbeat), install LanceDB for vector memory, validate output with ASE.",
   "sprint_skills": [
-    "lifecycle/test-driven-development",
-    "lifecycle/incremental-implementation"
+    "test-driven-development",
+    "incremental-implementation"
   ],
   "never_do": [
     "Never execute commands without security policy regex check",
@@ -80,12 +80,12 @@
   "agent_skills": {
     "directory": "/home/thor/skiils",
     "default_skills": [
-      "lifecycle/using-agent-skills",
-      "lifecycle/context-engineering"
+      "using-agent-skills",
+      "context-engineering"
     ],
     "mandatory_skills": {
-      "api": "lifecycle/api-and-interface-design",
-      "auth": "lifecycle/security-and-hardening"
+      "api": "api-and-interface-design",
+      "auth": "security-and-hardening"
     },
     "session_reporting_preference": true
   }
