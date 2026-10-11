@@ -972,6 +972,33 @@
             ? `ws://${window.location.hostname}:${window.location.port}/ws/stream`
             : 'ws://127.0.0.1:8090/ws/stream';
 
+        // J.A.R.V.I.S. Security Bearer Authentication
+        let authToken = localStorage.getItem("jarvis_auth_token") || "";
+
+        async function initAuthToken() {
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/auth/token`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.token) {
+                        authToken = data.token;
+                        localStorage.setItem("jarvis_auth_token", authToken);
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function getAuthHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+                headers['X-Jarvis-Token'] = authToken;
+            }
+            return headers;
+        }
+
+        initAuthToken();
+
         // Neural Text-to-Speech Engine
         async function speak(text) {
             stopSpeaking();
@@ -1036,11 +1063,25 @@
             try {
                 const res = await fetch(`${BACKEND_BASE}/api/command`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ query: query, context: 'hud' })
                 });
+                if (res.status === 401) {
+                    await initAuthToken();
+                    // Retry once with refreshed token
+                    const retry = await fetch(`${BACKEND_BASE}/api/command`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ query: query, context: 'hud' })
+                    });
+                    const data = await retry.json();
+                    valLatency.textContent = data.latency_ms + 'ms';
+                    logMsg(data.response, false);
+                    speak(data.response);
+                    return;
+                }
                 const data = await res.json();
-                valLatency.textContent = data.latency_ms + 'ms';
+                valLatency.textContent = (data.latency_ms || 10) + 'ms';
                 logMsg(data.response, false);
                 speak(data.response);
             } catch (err) {
@@ -1097,7 +1138,8 @@
         // Live Telemetry Sync via WebSocket
         function connectWebSocket() {
             try {
-                const ws = new WebSocket(WS_BASE);
+                const wsUrl = authToken ? `${WS_BASE}?token=${encodeURIComponent(authToken)}` : WS_BASE;
+                const ws = new WebSocket(wsUrl);
                 ws.onopen = () => { connStatus.textContent = 'LINK: WEBSOCKET STREAMING'; };
                 ws.onclose = () => {
                     connStatus.textContent = 'LINK: POLLING FALLBACK';
@@ -1145,7 +1187,7 @@
 
         async function fetchTelemetry() {
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/telemetry`);
+                const res = await fetch(`${BACKEND_BASE}/api/telemetry`, { headers: getAuthHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     updateTelemetryUI(data);
@@ -1207,7 +1249,7 @@
         async function loadDrawerTodos() {
             const listDiv = document.getElementById('drawerTodoList');
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos`);
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos`, { headers: getAuthHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     const todos = data.todos || [];
@@ -1239,7 +1281,7 @@
             try {
                 const res = await fetch(`${BACKEND_BASE}/api/productivity/todos`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ task: task, priority: prio.value })
                 });
                 if (res.ok) {
@@ -1252,7 +1294,10 @@
 
         async function drawerCompleteTodo(id) {
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos/${id}/complete`, { method: 'POST' });
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos/${id}/complete`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
                 if (res.ok) {
                     loadDrawerTodos();
                     logMsg(`Objective #${id} completed.`, false);
@@ -1262,7 +1307,10 @@
 
         async function drawerClearCompletedTodos() {
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos/completed`, { method: 'DELETE' });
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos/completed`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
                 if (res.ok) {
                     loadDrawerTodos();
                     logMsg(`Cleared completed objectives.`, false);
@@ -1274,7 +1322,7 @@
         async function loadDrawerTimers() {
             const listDiv = document.getElementById('drawerTimerList');
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers`);
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers`, { headers: getAuthHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     activeTimersCache = data.timers || [];
@@ -1291,22 +1339,25 @@
                 listDiv.innerHTML = '<div style="color:#64748b; font-style:italic;">No active countdowns.</div>';
                 return;
             }
-            listDiv.innerHTML = activeTimersCache.map(t => `
+            const now = Date.now() / 1000;
+            listDiv.innerHTML = activeTimersCache.map(t => {
+                const rem = t.expires_at ? Math.max(0, Math.round(t.expires_at - now)) : (t.remaining_seconds || 0);
+                return `
                 <div class="timer-card">
                     <div>
                         <div style="color:var(--neon-gold); font-weight:bold;">${t.label}</div>
-                        <div style="font-size:0.75rem; color:#a5f3fc;">T-Minus: ${t.remaining_seconds}s</div>
+                        <div style="font-size:0.75rem; color:#a5f3fc;">T-Minus: ${rem}s</div>
                     </div>
                     <button onclick="drawerCancelTimer('${t.id}')" style="padding:2px 6px; font-size:0.68rem; border-color:var(--danger-red); color:var(--danger-red);">CANCEL</button>
                 </div>
-            `).join('');
+            `;}).join('');
         }
 
         async function drawerStartTimer(secs, label) {
             try {
                 const res = await fetch(`${BACKEND_BASE}/api/productivity/timers`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ seconds: parseInt(secs), label: label })
                 });
                 if (res.ok) {
@@ -1324,7 +1375,10 @@
 
         async function drawerCancelTimer(id) {
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
                 if (res.ok) {
                     loadDrawerTimers();
                     logMsg(`Timer cancelled.`, false);
@@ -1332,12 +1386,9 @@
             } catch(e){}
         }
 
-        // Ticker for timers
+        // Non-drifting Ticker for timers
         setInterval(() => {
             if (activeTimersCache.length > 0) {
-                activeTimersCache.forEach(t => {
-                    t.remaining_seconds = Math.max(0, t.remaining_seconds - 1);
-                });
                 renderDrawerTimers();
             }
         }, 1000);
@@ -1345,13 +1396,13 @@
         // 3. Display & Power
         async function loadDrawerDisplay() {
             try {
-                const resB = await fetch(`${BACKEND_BASE}/api/system/brightness`);
+                const resB = await fetch(`${BACKEND_BASE}/api/system/brightness`, { headers: getAuthHeaders() });
                 if (resB.ok) {
                     const dataB = await resB.json();
                     document.getElementById('drawerBrightnessSlider').value = dataB.percent;
                     document.getElementById('drawerBrightnessVal').textContent = dataB.percent + '%';
                 }
-                const resP = await fetch(`${BACKEND_BASE}/api/system/power`);
+                const resP = await fetch(`${BACKEND_BASE}/api/system/power`, { headers: getAuthHeaders() });
                 if (resP.ok) {
                     const dataP = await resP.json();
                     document.getElementById('drawerPowerStatus').textContent = dataP.status_text || 'Nominal AC Power';
@@ -1373,7 +1424,7 @@
                 document.getElementById('drawerBrightnessVal').textContent = pct + '%';
                 const res = await fetch(`${BACKEND_BASE}/api/system/brightness`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ percent: parseInt(pct) })
                 });
                 if (res.ok) {
@@ -1384,7 +1435,10 @@
 
         async function drawerLockSession() {
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/system/lock`, { method: 'POST' });
+                const res = await fetch(`${BACKEND_BASE}/api/system/lock`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
                 if (res.ok) {
                     logMsg(`Perimeter secured. Session locked.`, false);
                 }
@@ -1397,7 +1451,7 @@
             const card = document.getElementById('drawerWeatherCard');
             card.textContent = 'Scanning atmospheric metrics...';
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/weather?location=${encodeURIComponent(loc)}`);
+                const res = await fetch(`${BACKEND_BASE}/api/weather?location=${encodeURIComponent(loc)}`, { headers: getAuthHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && data.temp_c !== undefined) {
@@ -1421,7 +1475,7 @@
             const info = document.getElementById('drawerNetworkInfo');
             info.textContent = 'Probing network interfaces...';
             try {
-                const res = await fetch(`${BACKEND_BASE}/api/network/status`);
+                const res = await fetch(`${BACKEND_BASE}/api/network/status`, { headers: getAuthHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     info.innerHTML = `
@@ -1442,7 +1496,7 @@
             try {
                 const res = await fetch(`${BACKEND_BASE}/api/network/ping`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ host: host })
                 });
                 if (res.ok) {
@@ -1462,7 +1516,7 @@
             try {
                 const res = await fetch(`${BACKEND_BASE}/api/screen/ocr`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({})
                 });
                 if (res.ok) {

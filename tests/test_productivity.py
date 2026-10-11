@@ -57,6 +57,54 @@ class TestProductivity(unittest.TestCase):
         clear_res = clear_completed_todos()
         self.assertTrue(clear_res["success"])
 
+    def test_todo_crud_lifecycle(self):
+        # 1. Add todo
+        create_res = add_todo("Arc Reactor Firmware Update", priority="medium")
+        self.assertTrue(create_res["success"])
+        t_id = create_res["id"]
+
+        # 2. Get todo
+        from productivity import get_todo, update_todo, delete_todo
+        res_get = get_todo(t_id)
+        self.assertTrue(res_get["success"])
+        item = res_get["todo"]
+        self.assertEqual(item["task"], "Arc Reactor Firmware Update")
+        self.assertEqual(item["priority"], "medium")
+
+        # 3. Update todo
+        up_res = update_todo(t_id, task="Arc Reactor Firmware Patch v2", priority="high")
+        self.assertTrue(up_res["success"])
+        res_up = get_todo(t_id)
+        self.assertTrue(res_up["success"])
+        updated_item = res_up["todo"]
+        self.assertEqual(updated_item["task"], "Arc Reactor Firmware Patch v2")
+        self.assertEqual(updated_item["priority"], "high")
+
+        # 4. Delete todo
+        del_res = delete_todo(t_id)
+        self.assertTrue(del_res["success"])
+        del_check = get_todo(t_id)
+        self.assertFalse(del_check["success"])
+
+    def test_timer_persistence_and_rehydration(self):
+        from productivity import ACTIVE_TIMERS, rehydrate_timers
+        # Set a 60-second timer
+        t_res = set_timer(60, label="Persisted Sensor Scan")
+        self.assertTrue(t_res["success"])
+        t_id = t_res["timer_id"]
+
+        # Simulate engine restart by clearing in-memory dictionary
+        ACTIVE_TIMERS.clear()
+        self.assertEqual(len(get_active_timers()), 0)
+
+        # Rehydrate from SQLite
+        rehydrate_timers()
+        rehydrated = get_active_timers()
+        self.assertTrue(any(t["id"] == t_id for t in rehydrated))
+
+        # Cleanup
+        cancel_timer(t_id)
+
     def test_clipboard(self):
         test_payload = f"JARVIS_CLIP_VERIFICATION_{int(time.time())}"
         set_res = set_clipboard_text(test_payload)
