@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.V.I.S. // STARK INDUSTRIES OPERATING LAYER</title>
+    <title>J.A.R.V.I.S. // ALEXA FOR PC NEURAL VOICE OPERATING LAYER</title>
     <style>
         :root {
             --neon-gold: #ffb703;
@@ -12,7 +12,7 @@
             --danger-red: #ff3366;
             --success-green: #00ff88;
             --dark-bg: #030712;
-            --panel-bg: rgba(3, 15, 30, 0.88);
+            --panel-bg: rgba(3, 15, 30, 0.90);
             --border-glow: 0 0 15px rgba(0, 240, 255, 0.25);
         }
 
@@ -44,25 +44,59 @@
         }
 
         .system-status {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             letter-spacing: 2px;
             text-shadow: 0 0 6px var(--arc-blue);
         }
 
         .hud-title {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 900;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             color: var(--neon-gold);
             text-shadow: 0 0 15px rgba(255, 183, 3, 0.6);
             text-align: center;
         }
 
+        /* Voice Selection & Control Header Bar */
+        .voice-control-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: rgba(0, 20, 38, 0.7);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 6px 14px;
+            border-radius: 4px;
+            margin-top: 6px;
+            font-size: 0.8rem;
+            justify-content: space-between;
+        }
+
+        .voice-selector-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        select {
+            background: rgba(3, 15, 30, 0.95);
+            border: 1px solid var(--arc-blue);
+            color: var(--arc-blue);
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        select:focus { border-color: var(--neon-gold); }
+
         .quick-bar {
             display: flex;
             gap: 8px;
             justify-content: center;
-            padding: 8px 0;
+            padding: 6px 0;
         }
 
         .quick-chip {
@@ -119,16 +153,16 @@
         }
 
         .helmet-container {
-            width: 260px;
-            height: 340px;
+            width: 250px;
+            height: 330px;
             position: relative;
             filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.4));
             animation: float 4s ease-in-out infinite;
         }
 
         .reactor-container {
-            width: 220px;
-            height: 220px;
+            width: 210px;
+            height: 210px;
             position: relative;
             filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.6));
             animation: pulse-core 3s ease-in-out infinite alternate;
@@ -166,12 +200,12 @@
         /* Telemetry Side Panels */
         .side-panel {
             position: absolute;
-            width: 280px;
+            width: 275px;
             background: var(--panel-bg);
             border: 1px solid var(--arc-blue);
-            padding: 14px;
+            padding: 12px;
             box-shadow: var(--border-glow);
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             backdrop-filter: blur(8px);
             z-index: 10;
         }
@@ -191,17 +225,17 @@
         .data-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             align-items: center;
         }
 
         /* Gauge Progress Bar */
         .gauge-track {
             width: 100%;
-            height: 6px;
+            height: 5px;
             background: rgba(0, 240, 255, 0.15);
             margin-top: 2px;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
             border-radius: 3px;
             overflow: hidden;
         }
@@ -231,8 +265,8 @@
         .v-bar {
             flex: 1;
             background: var(--arc-blue);
-            height: 20%;
-            transition: height 0.1s ease;
+            height: 15%;
+            transition: height 0.08s ease;
         }
 
         footer {
@@ -314,6 +348,7 @@
             font-size: 0.72rem;
             color: #a5f3fc;
             cursor: pointer;
+            user-select: none;
         }
 
         .loop-toggle input { cursor: pointer; }
@@ -322,10 +357,33 @@
 <body>
 
     <header>
-        <div class="system-status" id="micStatus">MIC: STANDBY // PROTOCOL ACTIVE</div>
-        <div class="hud-title">J.A.R.V.I.S. // STARK INDUSTRIAL LAYER</div>
+        <div class="system-status" id="micStatus">MIC: STANDBY // ALEXA PC LOOP</div>
+        <div class="hud-title">J.A.R.V.I.S. // ALEXA FOR PC NEURAL VOICE</div>
         <div class="system-status" id="connStatus">LINK: WEBSOCKET ACTIVE</div>
     </header>
+
+    <!-- Voice Control Bar -->
+    <div class="voice-control-bar">
+        <div class="voice-selector-wrap">
+            <span>🎙️ VOICE PROFILE:</span>
+            <select id="voiceProfileSelect" onchange="onVoiceProfileChanged()">
+                <option value="alexa" selected>🌟 Alexa (en-US Jenny Neural - Warm, Natural)</option>
+                <option value="alexa_aria">🌟 Alexa Expressive (en-US Aria Neural)</option>
+                <option value="jarvis">🎩 J.A.R.V.I.S. (en-GB Ryan Neural - British Butler)</option>
+                <option value="friday">⚡ F.R.I.D.A.Y. (en-GB Sonia Neural - British Assistant)</option>
+            </select>
+            <button onclick="testVoiceSample()" style="padding:3px 10px; font-size:0.75rem;">TEST VOICE</button>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:center;">
+            <label class="loop-toggle">
+                <input type="checkbox" id="chkWakeWord" checked> "Alexa" / "Jarvis" Wake Word Filter
+            </label>
+            <label class="loop-toggle">
+                <input type="checkbox" id="chkLoop" checked> Hands-Free Continuous Loop
+            </label>
+        </div>
+    </div>
 
     <div class="quick-bar">
         <div class="quick-chip" onclick="quickCmd('diagnostic check')">DIAGNOSTIC</div>
@@ -403,13 +461,14 @@
         <!-- Right Capabilities Panel -->
         <div class="side-panel right-panel">
             <div class="panel-header">TACTICAL SUBSYSTEMS</div>
-            <div class="data-row"><span>COGNITIVE ENGINE:</span> <span style="color:var(--neon-gold);">LLAMA 3.2 // OLLAMA</span></div>
+            <div class="data-row"><span>TTS SYNTHESIS:</span> <span id="valTtsMode" style="color:var(--neon-gold);">NEURAL (ALEXA)</span></div>
+            <div class="data-row"><span>COGNITIVE BRAIN:</span> <span>LLAMA 3.2 // OLLAMA</span></div>
             <div class="data-row"><span>VECTOR MEMORY:</span> <span style="color:#00ff88;">NOMIC EMBED (768-D)</span></div>
-            <div class="data-row"><span>SYSTEM CONTROL:</span> <span>PACTL + APPS + OCR</span></div>
+            <div class="data-row"><span>DESKTOP CONTROL:</span> <span>PACTL + APPS + OCR</span></div>
             <div class="data-row"><span>SECURITY POLICY:</span> <span style="color:#00ff88;">SANDBOX ENFORCED</span></div>
             <div class="data-row"><span>ROUND-TRIP:</span> <span id="valLatency">14ms</span></div>
             
-            <div class="panel-header" style="margin-top:12px;">AUDIO FREQUENCY SPECTRUM</div>
+            <div class="panel-header" style="margin-top:12px;">NEURAL AUDIO SPECTRUM</div>
             <div class="visualizer-strip" id="visualizerStrip">
                 <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
                 <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
@@ -421,16 +480,13 @@
 
     <footer>
         <div class="terminal-output" id="terminalLog">
-            [SYS] J.A.R.V.I.S. Operating Layer v3.5.0 initialized.<br>
-            [JARVIS] All systems nominal, Sir. Awaiting your directive.
+            [SYS] J.A.R.V.I.S. / Alexa for PC Operating Layer v3.6.0 initialized.<br>
+            [ALEXA] Neural voice engine online. Say "Alexa" or "Jarvis", or type your directive below.
         </div>
         <div class="command-bar">
             <button id="micBtn" onclick="toggleListening()">ACTIVATE MIC</button>
             <input type="text" id="commandInput" placeholder="Speak directive or type command here..." autofocus>
             <button onclick="executeCommand()">TRANSMIT</button>
-            <label class="loop-toggle">
-                <input type="checkbox" id="chkLoop" checked> Auto-Listen Loop
-            </label>
         </div>
     </footer>
 
@@ -442,6 +498,9 @@
         const micStatus = document.getElementById('micStatus');
         const connStatus = document.getElementById('connStatus');
         const chkLoop = document.getElementById('chkLoop');
+        const chkWakeWord = document.getElementById('chkWakeWord');
+        const voiceSelect = document.getElementById('voiceProfileSelect');
+        const valTtsMode = document.getElementById('valTtsMode');
 
         // Telemetry Dials
         const valStability = document.getElementById('valStability');
@@ -456,7 +515,10 @@
         const valLatency = document.getElementById('valLatency');
         const vBars = document.querySelectorAll('.v-bar');
 
-        // Web Audio API Synthesizer (Procedural Stark Sound Engine)
+        let currentAudio = null;
+        let isSpeaking = false;
+
+        // Web Audio API Synthesizer (Alexa Earcons & Stark Chimes)
         let audioCtx = null;
         function getAudioContext() {
             if (!audioCtx) {
@@ -468,35 +530,36 @@
             return audioCtx;
         }
 
-        function playStarkChime() {
+        // Alexa Signature Wake Chime (Two-tone rising chime)
+        function playAlexaWakeChime() {
             try {
                 const ctx = getAudioContext();
                 const now = ctx.currentTime;
-                // Dual tone: 587Hz (D5) -> 880Hz (A5)
                 const osc1 = ctx.createOscillator();
                 const osc2 = ctx.createOscillator();
                 const gain = ctx.createGain();
 
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(587.33, now);
+                osc1.frequency.setValueAtTime(440.0, now); // A4
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(880.0, now + 0.08);
+                osc2.frequency.setValueAtTime(880.0, now + 0.08); // A5
 
                 gain.gain.setValueAtTime(0.12, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
 
                 osc1.connect(gain);
                 osc2.connect(gain);
                 gain.connect(ctx.destination);
 
                 osc1.start(now);
-                osc1.stop(now + 0.12);
+                osc1.stop(now + 0.10);
                 osc2.start(now + 0.08);
-                osc2.stop(now + 0.35);
+                osc2.stop(now + 0.32);
             } catch(e) {}
         }
 
-        function playSonarSweep() {
+        // Alexa Process Acknowledgment Chime (Soft descending confirmation)
+        function playAlexaProcessChime() {
             try {
                 const ctx = getAudioContext();
                 const now = ctx.currentTime;
@@ -504,20 +567,21 @@
                 const gain = ctx.createGain();
 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(1100, now);
-                osc.frequency.exponentialRampToValueAtTime(350, now + 0.28);
+                osc.frequency.setValueAtTime(659.25, now); // E5
+                osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.15); // C5
 
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                gain.gain.setValueAtTime(0.09, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
                 osc.connect(gain);
                 gain.connect(ctx.destination);
+
                 osc.start(now);
-                osc.stop(now + 0.28);
+                osc.stop(now + 0.22);
             } catch(e) {}
         }
 
-        // Voice Pipeline
+        // Voice Pipeline (Speech-to-Text)
         let synth = window.speechSynthesis;
         let recognition = null;
         let isListening = false;
@@ -533,23 +597,57 @@
                 isListening = true;
                 micBtn.classList.add('listening');
                 micBtn.textContent = 'LISTENING...';
-                micStatus.textContent = 'MIC: ON // STREAMING DIRECTIVE';
-                playStarkChime();
+                micStatus.textContent = 'MIC: ON // LISTENING';
+                playAlexaWakeChime();
             };
 
             recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
+                const transcript = event.results[0][0].transcript.trim();
                 input.value = transcript;
-                logMsg(transcript, true);
-                sendDirective(transcript);
+                
+                // Wake word filtering if enabled
+                let finalQuery = transcript;
+                if (chkWakeWord.checked) {
+                    const lower = transcript.toLowerCase();
+                    const wakeWords = ["alexa", "jarvis", "hey alexa", "hey jarvis", "computer"];
+                    let matched = false;
+                    for (const w of wakeWords) {
+                        if (lower.startsWith(w)) {
+                            finalQuery = transcript.substring(w.length).replace(/^[,.\s]+/, '');
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched && !isSpeaking) {
+                        // User spoke without wake word in standby mode; ignore noise
+                        logMsg(`[FILTERED] "${transcript}" (Say "Alexa" or "Jarvis" first)`, false);
+                        restartListeningIfLoop();
+                        return;
+                    }
+                }
+
+                if (!finalQuery) finalQuery = transcript;
+                logMsg(finalQuery, true);
+                playAlexaProcessChime();
+                sendDirective(finalQuery);
             };
 
-            recognition.onerror = function() { stopListening(); };
-            recognition.onend = function() { stopListening(); };
+            recognition.onerror = function(err) {
+                stopListening();
+                restartListeningIfLoop(1000);
+            };
+
+            recognition.onend = function() {
+                stopListening();
+            };
         }
 
         function toggleListening() {
             if (!recognition) return;
+            // Barge-in: if assistant is speaking, halt it immediately!
+            if (isSpeaking) {
+                stopSpeaking();
+            }
             if (isListening) {
                 recognition.stop();
             } else {
@@ -561,13 +659,35 @@
             isListening = false;
             micBtn.classList.remove('listening');
             micBtn.textContent = 'ACTIVATE MIC';
-            micStatus.textContent = 'MIC: STANDBY // PROTOCOL ACTIVE';
+            micStatus.textContent = 'MIC: STANDBY // ALEXA PC LOOP';
+        }
+
+        function restartListeningIfLoop(delayMs = 400) {
+            if (chkLoop.checked && recognition && !isListening && !isSpeaking) {
+                setTimeout(() => {
+                    try { recognition.start(); } catch(e){}
+                }, delayMs);
+            }
+        }
+
+        function stopSpeaking() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            if (synth) synth.cancel();
+            isSpeaking = false;
+            helmet.classList.remove('speaking');
+            clearInterval(visInterval);
+            animateVisualizer(false);
         }
 
         function logMsg(text, isUser = false) {
             const time = new Date().toLocaleTimeString();
             const color = isUser ? '#ffb703' : '#00f0ff';
-            log.innerHTML += `<br><span style="color:${color}">[${time}] ${isUser ? 'SIR > ' : 'JARVIS > '}</span>${text}`;
+            const speaker = isUser ? 'YOU > ' : 'ALEXA > ';
+            log.innerHTML += `<br><span style="color:${color}">[${time}] ${speaker}</span>${text}`;
             log.scrollTop = log.scrollHeight;
         }
 
@@ -584,43 +704,77 @@
 
         let visInterval = null;
 
-        function speak(text) {
-            if (!synth) return;
+        // Backend base URL (defaulting to 8090)
+        const BACKEND_BASE = (window.location.protocol && window.location.protocol.startsWith('http') && window.location.port)
+            ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+            : 'http://127.0.0.1:8090';
+        const WS_BASE = (window.location.protocol && window.location.protocol.startsWith('http') && window.location.port)
+            ? `ws://${window.location.hostname}:${window.location.port}/ws/stream`
+            : 'ws://127.0.0.1:8090/ws/stream';
+
+        // Neural Text-to-Speech Engine
+        async function speak(text) {
+            stopSpeaking();
+            const selectedProfile = voiceSelect.value;
+            const cleanText = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
+            if (!cleanText) {
+                restartListeningIfLoop();
+                return;
+            }
+
+            isSpeaking = true;
+            helmet.classList.add('speaking');
+            visInterval = setInterval(() => animateVisualizer(true), 80);
+
+            try {
+                // High-fidelity neural voice streamed from backend
+                const ttsUrl = `${BACKEND_BASE}/api/voice/tts?text=${encodeURIComponent(cleanText)}&voice=${encodeURIComponent(selectedProfile)}`;
+                const audio = new Audio(ttsUrl);
+                currentAudio = audio;
+
+                audio.onended = () => {
+                    stopSpeaking();
+                    restartListeningIfLoop(400);
+                };
+
+                audio.onerror = () => {
+                    console.warn("Backend neural TTS stream failed, using browser fallback.");
+                    fallbackSpeechSynthesis(cleanText);
+                };
+
+                await audio.play();
+            } catch(e) {
+                fallbackSpeechSynthesis(cleanText);
+            }
+        }
+
+        function fallbackSpeechSynthesis(cleanText) {
+            if (!synth) {
+                stopSpeaking();
+                restartListeningIfLoop();
+                return;
+            }
             synth.cancel();
-            const utter = new SpeechSynthesisUtterance(text);
+            const utter = new SpeechSynthesisUtterance(cleanText);
             const voices = synth.getVoices();
-            // J.A.R.V.I.S. British English Voice
-            const jarvisVoice = voices.find(v => v.name.includes('UK English') || v.name.includes('Daniel') || v.name.includes('Oliver') || v.lang === 'en-GB');
-            if (jarvisVoice) utter.voice = jarvisVoice;
+            const preferred = voices.find(v => v.lang.startsWith('en'));
+            if (preferred) utter.voice = preferred;
 
-            utter.pitch = 0.96;
-            utter.rate = 1.04;
+            utter.pitch = 1.0;
+            utter.rate = 1.05;
 
-            utter.onstart = function() {
-                helmet.classList.add('speaking');
-                visInterval = setInterval(() => animateVisualizer(true), 80);
-            };
-
-            utter.onend = function() {
-                helmet.classList.remove('speaking');
-                clearInterval(visInterval);
-                animateVisualizer(false);
-
-                // Continuous full-duplex loop
-                if (chkLoop.checked && recognition && !isListening) {
-                    setTimeout(() => {
-                        try { recognition.start(); } catch(e){}
-                    }, 400);
-                }
+            utter.onend = () => {
+                stopSpeaking();
+                restartListeningIfLoop(400);
             };
 
             synth.speak(utter);
         }
 
         async function sendDirective(query) {
-            playStarkChime();
             try {
-                const res = await fetch('http://127.0.0.1:8080/api/command', {
+                const res = await fetch(`${BACKEND_BASE}/api/command`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: query, context: 'hud' })
@@ -630,7 +784,7 @@
                 logMsg(data.response, false);
                 speak(data.response);
             } catch (err) {
-                const fallback = "Core backend offline. Operating on localized failsafe, Sir.";
+                const fallback = "Backend connection offline. Operating on localized failsafe.";
                 logMsg(fallback, false);
                 speak(fallback);
             }
@@ -641,6 +795,7 @@
             if (!val) return;
             logMsg(val, true);
             input.value = '';
+            playAlexaProcessChime();
             sendDirective(val);
         }
 
@@ -649,11 +804,29 @@
             executeCommand();
         }
 
+        function onVoiceProfileChanged() {
+            const val = voiceSelect.value;
+            valTtsMode.textContent = `NEURAL (${val.toUpperCase()})`;
+            playAlexaProcessChime();
+        }
+
+        function testVoiceSample() {
+            const val = voiceSelect.value;
+            const samples = {
+                "alexa": "Hello! I am your PC voice assistant. Everything is running smoothly.",
+                "alexa_aria": "Good day! All systems are performing at peak efficiency.",
+                "jarvis": "At your service, Sir. Systems and armor diagnostics are nominal.",
+                "friday": "All primary protocols are active and standing by, Boss."
+            };
+            const sample = samples[val] || samples["alexa"];
+            speak(sample);
+        }
+
         input.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') executeCommand();
         });
 
-        // Spacebar shortcut to trigger mic (when not typing in text box)
+        // Spacebar shortcut to activate/interrupt mic
         window.addEventListener('keydown', function(e) {
             if (e.code === 'Space' && document.activeElement !== input) {
                 e.preventDefault();
@@ -664,7 +837,7 @@
         // Live Telemetry Sync via WebSocket
         function connectWebSocket() {
             try {
-                const ws = new WebSocket('ws://127.0.0.1:8080/ws/stream');
+                const ws = new WebSocket(WS_BASE);
                 ws.onopen = () => { connStatus.textContent = 'LINK: WEBSOCKET STREAMING'; };
                 ws.onclose = () => {
                     connStatus.textContent = 'LINK: POLLING FALLBACK';
@@ -710,10 +883,9 @@
             }
         }
 
-        // Periodic Fallback Poll for Telemetry
         async function fetchTelemetry() {
             try {
-                const res = await fetch('http://127.0.0.1:8080/api/telemetry');
+                const res = await fetch(`${BACKEND_BASE}/api/telemetry`);
                 if (res.ok) {
                     const data = await res.json();
                     updateTelemetryUI(data);

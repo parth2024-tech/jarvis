@@ -7,6 +7,7 @@ import json
 import threading
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from sandbox import secure_execute
@@ -16,11 +17,12 @@ from reflection import record_reflection, get_recent_reflections
 from system_telemetry import get_system_metrics, get_telemetry_summary
 from llm_agent import execute_agent_directive
 from vector_memory import store_memory, query_memories
+from voice_engine import synthesize_speech, get_voice_profiles
 
 app = FastAPI(
     title="J.A.R.V.I.S. Unified Industrial Core",
-    description="Production-grade autonomous AI operating layer integrating real telemetry, vector/relational memory, secure execution sandboxing, and WebSocket streaming.",
-    version="3.5.0"
+    description="Production-grade autonomous AI operating layer integrating real telemetry, vector/relational memory, secure execution sandboxing, WebSocket streaming, and neural voice synthesis.",
+    version="3.6.0"
 )
 
 app.add_middleware(
@@ -77,6 +79,11 @@ heartbeat.start()
 class QueryRequest(BaseModel):
     query: str
     context: str = "general"
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: str = "alexa"
+    rate: str = "+0%"
 
 @app.post("/api/command")
 async def handle_command(req: QueryRequest):
@@ -137,15 +144,36 @@ async def get_telemetry():
         "security_status": "SECURE / REGEX-POLICY SANDBOX"
     }
 
+# Neural TTS Voice API
+@app.get("/api/voice/profiles")
+async def list_voice_profiles():
+    return {"profiles": get_voice_profiles()}
+
+@app.get("/api/voice/tts")
+async def get_neural_tts(text: str, voice: str = "alexa", rate: str = "+0%"):
+    audio_bytes = await synthesize_speech(text, voice_key=voice, rate=rate)
+    return Response(
+        content=audio_bytes,
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "public, max-age=86400"}
+    )
+
+@app.post("/api/voice/tts")
+async def post_neural_tts(req: TTSRequest):
+    audio_bytes = await synthesize_speech(req.text, voice_key=req.voice, rate=req.rate)
+    return Response(
+        content=audio_bytes,
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "public, max-age=86400"}
+    )
+
 @app.websocket("/ws/stream")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            # Check for client messages with timeout or send periodic telemetry
             try:
                 data = await asyncio.wait_for(websocket.receive_text(), timeout=2.0)
-                # Client sent a message
                 parsed = {}
                 try:
                     parsed = json.loads(data)
@@ -160,7 +188,6 @@ async def websocket_endpoint(websocket: WebSocket):
                     "timestamp": time.time()
                 }))
             except asyncio.TimeoutError:
-                # Periodic telemetry push
                 metrics = get_system_metrics()
                 await websocket.send_text(json.dumps({
                     "type": "telemetry_pulse",
@@ -173,4 +200,5 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"[WS ERROR] {e}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8080, log_level="warning")
+    port = int(os.environ.get("JARVIS_PORT", 8090))
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

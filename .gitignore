@@ -5,6 +5,7 @@ __pycache__/
 *.png
 memory/*.db
 memory/*.log
+memory/tts_cache/
 .pytest_cache/
 
 # Logs

@@ -19,14 +19,14 @@ class TestJarvisUnifiedCore(unittest.TestCase):
         ready = False
         for _ in range(20):
             try:
-                res = requests.get("http://127.0.0.1:8080/api/telemetry", timeout=1)
+                res = requests.get("http://127.0.0.1:8090/api/telemetry", timeout=1)
                 if res.status_code == 200:
                     ready = True
                     break
             except Exception:
                 time.sleep(0.5)
         if not ready:
-            raise RuntimeError("Server failed to start on port 8080")
+            raise RuntimeError("Server failed to start on port 8090")
 
     @classmethod
     def tearDownClass(cls):
@@ -34,7 +34,7 @@ class TestJarvisUnifiedCore(unittest.TestCase):
         cls.server_process.wait()
 
     def test_01_telemetry_endpoint(self):
-        res = requests.get("http://127.0.0.1:8080/api/telemetry")
+        res = requests.get("http://127.0.0.1:8090/api/telemetry")
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertIn("reactor_stability", data)
@@ -42,7 +42,7 @@ class TestJarvisUnifiedCore(unittest.TestCase):
 
     def test_02_command_diagnostic(self):
         payload = {"query": "system diagnostic check", "context": "hud"}
-        res = requests.post("http://127.0.0.1:8080/api/command", json=payload)
+        res = requests.post("http://127.0.0.1:8090/api/command", json=payload)
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertEqual(data["status"], "success")
@@ -50,7 +50,7 @@ class TestJarvisUnifiedCore(unittest.TestCase):
 
     def test_03_secure_execution_sandbox(self):
         payload = {"query": "run test suite", "context": "hud"}
-        res = requests.post("http://127.0.0.1:8080/api/command", json=payload)
+        res = requests.post("http://127.0.0.1:8090/api/command", json=payload)
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertEqual(data["intent"], "secure_execution")
