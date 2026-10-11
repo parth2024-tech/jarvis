@@ -12,12 +12,20 @@ from pydantic import BaseModel
 
 from sandbox import secure_execute
 from heartbeat import ProactiveHeartbeat
-from vision import capture_screen_state
+from vision import capture_screen_state, read_screen_text, summarize_screen
 from reflection import record_reflection, get_recent_reflections
 from system_telemetry import get_system_metrics, get_telemetry_summary
 from llm_agent import execute_agent_directive
 from vector_memory import store_memory, query_memories
 from voice_engine import synthesize_speech, get_voice_profiles
+from power_display import get_brightness, set_brightness, change_brightness, lock_session, get_power_status
+from productivity import (
+    set_timer, get_active_timers, cancel_timer,
+    add_todo, list_todos, complete_todo, clear_completed_todos,
+    get_clipboard_text, set_clipboard_text
+)
+from weather_search import get_weather, search_instant_knowledge
+from network_tools import get_network_status, ping_latency
 
 app = FastAPI(
     title="J.A.R.V.I.S. Unified Industrial Core",
@@ -84,6 +92,26 @@ class TTSRequest(BaseModel):
     text: str
     voice: str = "alexa"
     rate: str = "+0%"
+
+class TodoCreateRequest(BaseModel):
+    task: str
+    priority: str = "normal"
+
+class TimerCreateRequest(BaseModel):
+    seconds: int
+    label: str = "Directive"
+
+class BrightnessRequest(BaseModel):
+    percent: int
+
+class ClipboardRequest(BaseModel):
+    text: str
+
+class PingRequest(BaseModel):
+    host: str = "1.1.1.1"
+
+class OCRRequest(BaseModel):
+    question: str = ""
 
 @app.post("/api/command")
 async def handle_command(req: QueryRequest):
@@ -166,6 +194,95 @@ async def post_neural_tts(req: TTSRequest):
         media_type="audio/mpeg",
         headers={"Cache-Control": "public, max-age=86400"}
     )
+
+# -----------------------------
+# Productivity API
+# -----------------------------
+@app.get("/api/productivity/todos")
+async def api_list_todos(include_completed: bool = False):
+    return {"todos": list_todos(include_completed=include_completed)}
+
+@app.post("/api/productivity/todos")
+async def api_add_todo(req: TodoCreateRequest):
+    return add_todo(req.task, priority=req.priority)
+
+@app.post("/api/productivity/todos/{todo_id}/complete")
+async def api_complete_todo(todo_id: int):
+    return complete_todo(todo_id)
+
+@app.delete("/api/productivity/todos/completed")
+async def api_clear_completed_todos():
+    return clear_completed_todos()
+
+@app.get("/api/productivity/timers")
+async def api_list_timers():
+    return {"timers": get_active_timers()}
+
+@app.post("/api/productivity/timers")
+async def api_create_timer(req: TimerCreateRequest):
+    return set_timer(req.seconds, label=req.label)
+
+@app.delete("/api/productivity/timers/{timer_id}")
+async def api_cancel_timer(timer_id: str):
+    return cancel_timer(timer_id)
+
+@app.get("/api/productivity/clipboard")
+async def api_get_clipboard():
+    return get_clipboard_text()
+
+@app.post("/api/productivity/clipboard")
+async def api_set_clipboard(req: ClipboardRequest):
+    return set_clipboard_text(req.text)
+
+# -----------------------------
+# Display & Power API
+# -----------------------------
+@app.get("/api/system/brightness")
+async def api_get_brightness():
+    return get_brightness()
+
+@app.post("/api/system/brightness")
+async def api_set_brightness(req: BrightnessRequest):
+    return set_brightness(req.percent)
+
+@app.post("/api/system/lock")
+async def api_lock_session():
+    return lock_session()
+
+@app.get("/api/system/power")
+async def api_get_power():
+    return get_power_status()
+
+# -----------------------------
+# Atmospheric Weather API
+# -----------------------------
+@app.get("/api/weather")
+async def api_get_weather(location: str = ""):
+    return get_weather(location)
+
+# -----------------------------
+# Network Telemetry API
+# -----------------------------
+@app.get("/api/network/status")
+async def api_get_network_status():
+    return get_network_status()
+
+@app.post("/api/network/ping")
+async def api_ping(req: PingRequest):
+    return ping_latency(req.host)
+
+# -----------------------------
+# Multimodal Vision & OCR API
+# -----------------------------
+@app.get("/api/screen/capture")
+async def api_capture_screen():
+    return capture_screen_state()
+
+@app.post("/api/screen/ocr")
+async def api_screen_ocr(req: OCRRequest = OCRRequest()):
+    if req.question:
+        return summarize_screen(req.question)
+    return read_screen_text()
 
 @app.websocket("/ws/stream")
 async def websocket_endpoint(websocket: WebSocket):

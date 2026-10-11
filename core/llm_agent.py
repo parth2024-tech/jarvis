@@ -5,7 +5,15 @@ import json
 from system_telemetry import get_telemetry_summary, get_system_metrics
 from media_controller import set_volume, change_volume, toggle_mute, get_volume, control_playback, get_playback_info
 from app_controller import launch_app, send_notification
-from vision import capture_screen_state
+from vision import capture_screen_state, read_screen_text, summarize_screen
+from power_display import get_brightness, set_brightness, change_brightness, lock_session, get_power_status
+from productivity import (
+    set_timer, get_active_timers, cancel_timer,
+    add_todo, list_todos, complete_todo, clear_completed_todos,
+    get_clipboard_text, set_clipboard_text
+)
+from weather_search import get_weather, search_instant_knowledge
+from network_tools import get_network_status, ping_latency
 from vector_memory import store_memory, query_memories, get_relevant_context
 from sandbox import secure_execute
 
@@ -80,6 +88,15 @@ def execute_agent_directive(query: str, context: str = "hud") -> dict:
         response = tool_result.get("message", "Playback updated, Sir.")
 
     # ==========================================
+    # Fast Tool Routing: Screen OCR & Reading
+    # ==========================================
+    elif any(k in q_lower for k in ["read my screen", "read screen", "what's on my screen", "what is on my screen", "summarize screen", "read text on screen", "screen text", "ocr"]):
+        intent = "vision_ocr"
+        res = summarize_screen(q_clean)
+        tool_result = res
+        response = res.get("response", "Visual OCR analysis complete, Sir.")
+
+    # ==========================================
     # Fast Tool Routing: Screen Capture / Vision
     # ==========================================
     elif any(k in q_lower for k in ["screenshot", "capture screen", "screen state", "look at screen", "visual scan"]):
@@ -90,6 +107,181 @@ def execute_agent_directive(query: str, context: str = "hud") -> dict:
             response = f"Desktop telemetry captured at {vis['width']} by {vis['height']} resolution, Sir. Frame stored to visual memory."
         else:
             response = f"Visual capture sensor reported an anomaly: {vis.get('error', 'unknown')}, Sir."
+
+    # ==========================================
+    # Fast Tool Routing: Display Illumination & Lock
+    # ==========================================
+    elif "lock screen" in q_lower or "lock workstation" in q_lower or "lock computer" in q_lower or "secure workstation" in q_lower:
+        intent = "power_display"
+        tool_result = lock_session()
+        response = tool_result.get("message", "Workstation locked, Sir.")
+
+    elif any(k in q_lower for k in ["brightness to", "set brightness", "illumination to"]):
+        intent = "power_display"
+        match = re.search(r"(\d+)\s*(?:%|percent)?", q_lower)
+        target = int(match.group(1)) if match else 50
+        tool_result = set_brightness(target)
+        response = tool_result.get("message", f"Brightness set to {target}%, Sir.")
+
+    elif any(k in q_lower for k in ["increase brightness", "brightness up", "brighter", "make it brighter"]):
+        intent = "power_display"
+        tool_result = change_brightness(+15)
+        response = tool_result.get("message", "Display brightness increased, Sir.")
+
+    elif any(k in q_lower for k in ["decrease brightness", "brightness down", "dim screen", "dim display", "darker"]):
+        intent = "power_display"
+        tool_result = change_brightness(-15)
+        response = tool_result.get("message", "Display illumination dimmed, Sir.")
+
+    elif any(k in q_lower for k in ["current brightness", "get brightness", "what is the brightness"]):
+        intent = "power_display"
+        tool_result = get_brightness()
+        response = f"Current display illumination is calibrated to {tool_result.get('percent', 50)}%, Sir."
+
+    elif any(k in q_lower for k in ["battery", "power status", "charge status", "power cell"]):
+        intent = "power_display"
+        tool_result = get_power_status()
+        response = tool_result.get("status_text", "Power status nominal, Sir.")
+
+    # ==========================================
+    # Fast Tool Routing: Timers & Reminders
+    # ==========================================
+    elif any(k in q_lower for k in ["set timer", "start timer", "timer for"]):
+        intent = "productivity_timer"
+        match = re.search(r"(?:for|of)?\s*(\d+)\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)", q_lower)
+        if match:
+            num = int(match.group(1))
+            unit = match.group(2)
+            if "min" in unit:
+                secs = num * 60
+            elif "hour" in unit or "hr" in unit:
+                secs = num * 3600
+            else:
+                secs = num
+            label = "Directive"
+            label_match = re.search(r"(?:for|called|named|to)\s+([a-zA-Z0-9\s]+?)(?:\s+for\s+\d+|\s*$)", q_clean, re.IGNORECASE)
+            if label_match and not re.match(r"^\d+\s*(second|min|hour)", label_match.group(1).strip()):
+                cand = label_match.group(1).strip()
+                if cand and cand.lower() not in ["timer", "a timer"]:
+                    label = cand
+            tool_result = set_timer(secs, label=label)
+            response = tool_result.get("message", f"Timer set for {secs} seconds, Sir.")
+        else:
+            tool_result = set_timer(60, label="Standard Countdown")
+            response = tool_result.get("message", "Timer initiated for 60 seconds, Sir.")
+
+    elif any(k in q_lower for k in ["list timers", "active timers", "show timers"]):
+        intent = "productivity_timer"
+        timers = get_active_timers()
+        tool_result = timers
+        if not timers:
+            response = "No countdown timers currently active in the queue, Sir."
+        else:
+            items = [f"'{t['label']}' ({t['remaining_seconds']}s remaining)" for t in timers]
+            response = f"Active countdown timers: {', '.join(items)}, Sir."
+
+    elif "cancel timer" in q_lower:
+        intent = "productivity_timer"
+        timers = get_active_timers()
+        if timers:
+            tool_result = cancel_timer(timers[0]["id"])
+            response = tool_result.get("message", "Active timer cancelled, Sir.")
+        else:
+            response = "No active timers available to cancel, Sir."
+
+    # ==========================================
+    # Fast Tool Routing: Todos & Tasks
+    # ==========================================
+    elif q_lower.startswith("add todo ") or q_lower.startswith("add task ") or q_lower.startswith("new task ") or q_lower.startswith("remind me to "):
+        intent = "productivity_todo"
+        task_text = re.sub(r"^(add todo|add task|new task|remind me to)\s+", "", q_clean, flags=re.IGNORECASE).strip()
+        tool_result = add_todo(task_text)
+        response = tool_result.get("message", f"Task recorded: '{task_text}', Sir.")
+
+    elif any(k in q_lower for k in ["list todos", "list tasks", "show todos", "show tasks", "my tasks", "pending tasks", "to-do list"]):
+        intent = "productivity_todo"
+        todos = list_todos(include_completed=False)
+        tool_result = todos
+        if not todos:
+            response = "All scheduled objectives are fulfilled. Task registry is clear, Sir."
+        else:
+            items = [f"#{t['id']}: {t['task']}" for t in todos[:5]]
+            extra = f" (and {len(todos) - 5} more)" if len(todos) > 5 else ""
+            response = f"Active task board: {'; '.join(items)}{extra}, Sir."
+
+    elif any(k in q_lower for k in ["complete task", "complete todo", "finish task", "finish todo", "done task"]):
+        intent = "productivity_todo"
+        m = re.search(r"(\d+)", q_lower)
+        if m:
+            t_id = int(m.group(1))
+            tool_result = complete_todo(t_id)
+            response = tool_result.get("message", f"Task #{t_id} marked complete, Sir.")
+        else:
+            response = "Please designate the task identification number to complete, Sir."
+
+    elif "clear completed" in q_lower:
+        intent = "productivity_todo"
+        tool_result = clear_completed_todos()
+        response = tool_result.get("message", "Completed objectives cleared, Sir.")
+
+    # ==========================================
+    # Fast Tool Routing: Wayland Clipboard
+    # ==========================================
+    elif any(k in q_lower for k in ["what's on my clipboard", "what is on my clipboard", "read clipboard", "get clipboard"]):
+        intent = "productivity_clipboard"
+        tool_result = get_clipboard_text()
+        text = tool_result.get("text", "")
+        if text:
+            preview = text[:150] + ("..." if len(text) > 150 else "")
+            response = f"Clipboard currently holds: '{preview}', Sir."
+        else:
+            response = "Clipboard buffer is currently empty, Sir."
+
+    elif q_lower.startswith("copy to clipboard") or q_lower.startswith("copy this to clipboard"):
+        intent = "productivity_clipboard"
+        clip_content = re.sub(r"^(copy to clipboard:?|copy this to clipboard:?)\s*", "", q_clean, flags=re.IGNORECASE).strip()
+        tool_result = set_clipboard_text(clip_content)
+        response = tool_result.get("message", "Content buffered to system clipboard, Sir.")
+
+    # ==========================================
+    # Fast Tool Routing: Weather & Atmosphere
+    # ==========================================
+    elif any(k in q_lower for k in ["weather", "temperature outside", "atmospheric condition", "forecast"]):
+        intent = "weather_telemetry"
+        loc = ""
+        m_loc = re.search(r"(?:weather|temperature|forecast)\s+(?:in|for|at)\s+([a-zA-Z\s]+)", q_clean, re.IGNORECASE)
+        if m_loc:
+            loc = m_loc.group(1).strip()
+        tool_result = get_weather(loc)
+        response = tool_result.get("summary", "Weather telemetry received, Sir.")
+
+    # ==========================================
+    # Fast Tool Routing: Network Diagnostics
+    # ==========================================
+    elif any(k in q_lower for k in ["network status", "wifi status", "ip address", "connection status", "network telemetry"]):
+        intent = "network_diagnostic"
+        tool_result = get_network_status()
+        response = tool_result.get("summary", "Network status nominal, Sir.")
+
+    elif any(k in q_lower for k in ["ping", "internet test", "test internet", "latency test", "network latency"]):
+        intent = "network_diagnostic"
+        host = "1.1.1.1"
+        m_host = re.search(r"ping\s+([a-zA-Z0-9.-]+)", q_lower)
+        if m_host and m_host.group(1) not in ["test", "latency", "google"]:
+            host = m_host.group(1)
+        tool_result = ping_latency(host)
+        response = tool_result.get("summary", "Network latency nominal, Sir.")
+
+    # ==========================================
+    # Fast Tool Routing: Instant Knowledge Search
+    # ==========================================
+    elif q_lower.startswith("search for ") or q_lower.startswith("look up ") or q_lower.startswith("who is ") or q_lower.startswith("what is "):
+        k_query = re.sub(r"^(search for|look up)\s+", "", q_clean, flags=re.IGNORECASE).strip()
+        k_res = search_instant_knowledge(k_query)
+        if k_res.get("success") and k_res.get("summary"):
+            intent = "instant_knowledge"
+            tool_result = k_res
+            response = k_res["summary"]
 
     # ==========================================
     # Fast Tool Routing: Desktop Applications
@@ -113,7 +305,7 @@ def execute_agent_directive(query: str, context: str = "hud") -> dict:
         intent = "application_control"
         msg = q_clean.replace("notify", "").replace("alert desktop", "").strip() or "Protocol updated."
         send_notification("DIRECTIVE ACKNOWLEDGED", msg)
-        response = f"Desktop notification dispatched, Sir."
+        response = "Desktop notification dispatched, Sir."
 
     # ==========================================
     # Fast Tool Routing: Memory Storage & Recall

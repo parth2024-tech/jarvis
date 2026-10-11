@@ -1,17 +1,18 @@
 {
   "name": "JARVIS",
-  "version": "3.5.0",
-  "description": "Industrial-grade autonomous personal AI assistant (AI operating layer) with FastAPI backend, secure sandbox execution, layered SQLite/LanceDB memory, WebSocket streaming telemetry, and cinematic Stark Industries HUD.",
+  "version": "3.7.0",
+  "description": "Industrial-grade autonomous personal AI assistant (AI operating layer) with FastAPI backend, secure sandbox execution, layered SQLite/LanceDB memory, WebSocket streaming telemetry, Alexa for PC neural TTS, multimodal OCR vision, productivity task/timer registry, display/power controls, live weather, network diagnostics, and cinematic Stark HUD.",
   "tech_stack": [
     "Python 3.14.7",
     "FastAPI (backend API server)",
     "Uvicorn (ASGI server)",
     "Pydantic v2 (data validation)",
-    "SQLite 3 (relational audit & interaction log)",
+    "SQLite 3 (relational audit & task registry)",
     "LanceDB (vector semantic memory)",
-    "HTML5/CSS3/JS (cinematic Stark HUD)",
-    "Web Speech API (browser-native STT/TTS)",
-    "Piper/Whisper (local TTS/STT fallback)"
+    "edge-tts / Microsoft Neural Voices (Alexa for PC)",
+    "Tesseract OCR & Spectacle (multimodal vision)",
+    "brightnessctl & loginctl & psutil (display & power)",
+    "HTML5/CSS3/JS (cinematic Stark HUD & Tactical Drawer)"
   ],
   "conventions": [
     "All core modules are pure Python in /core/",
@@ -30,16 +31,18 @@
     "WebSocket streaming for real-time bidirectional communication"
   ],
   "file_structure": {
-    "core/server.py": "FastAPI backend - intent routing, SQLite persistence, WebSocket streaming",
-    "core/hermes_bridge.py": "HTTP bridge server for Hermes Agent MCP integration",
-    "core/heartbeat.py": "Proactive background daemon for system health monitoring",
-    "core/vision.py": "Multimodal screen capture for visual telemetry",
-    "core/reflection.py": "Trajectory logging and self-improving reflection storage",
+    "core/server.py": "FastAPI backend - intent routing, REST APIs, WebSocket streaming",
+    "core/llm_agent.py": "Cognitive agent router and Ollama LLM reasoning engine",
+    "core/vision.py": "Multimodal screen capture and Tesseract OCR text extraction",
+    "core/productivity.py": "Mission todos SQLite registry, background timers, Wayland clipboard bridge",
+    "core/power_display.py": "Display brightnessctl controls, session locking, battery telemetry",
+    "core/weather_search.py": "Atmospheric weather (wttr.in) and DuckDuckGo instant knowledge",
+    "core/network_tools.py": "Network interface inspect, IP egress, Wi-Fi SSID, ICMP ping latency",
+    "core/voice_engine.py": "Neural TTS voice engine (edge-tts) with Alexa for PC profiles",
     "core/sandbox.py": "Secure command execution with regex-based security policy",
-    "ui/hud.html": "Cinematic Stark Industries HUD with dual-canvas SVG helmet, voice loop",
-    "memory/jarvis_state.db": "SQLite relational audit & interaction log",
-    "memory/audit_trail.log": "Secure execution audit trail",
-    "tests/": "Comprehensive unit and integration tests"
+    "ui/hud.html": "Cinematic Stark Industries HUD with Tactical Mission Drawer",
+    "memory/jarvis_state.db": "SQLite relational audit, interaction log & todo objectives",
+    "tests/": "Comprehensive unit and integration test suite"
   },
   "testing_strategy": {
     "framework": "unittest + requests",

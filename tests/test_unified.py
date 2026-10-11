@@ -68,5 +68,59 @@ class TestJarvisUnifiedCore(unittest.TestCase):
         self.assertFalse(res2["success"])
         self.assertIn("SECURITY EXCEPTION", res2["output"])
 
+    def test_05_productivity_todos_endpoints(self):
+        # Create todo
+        res = requests.post("http://127.0.0.1:8090/api/productivity/todos", json={"task": "Stark Industrial Check", "priority": "high"})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["success"])
+        todo_id = data["id"]
+
+        # List todos
+        res_list = requests.get("http://127.0.0.1:8090/api/productivity/todos")
+        self.assertEqual(res_list.status_code, 200)
+        todos = res_list.json()["todos"]
+        self.assertTrue(any(t["id"] == todo_id for t in todos))
+
+        # Complete todo
+        res_comp = requests.post(f"http://127.0.0.1:8090/api/productivity/todos/{todo_id}/complete")
+        self.assertEqual(res_comp.status_code, 200)
+
+    def test_06_productivity_timers_endpoints(self):
+        # Create timer
+        res = requests.post("http://127.0.0.1:8090/api/productivity/timers", json={"seconds": 15, "label": "Test Unified Timer"})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["success"])
+        timer_id = data["timer_id"]
+
+        # List timers
+        res_list = requests.get("http://127.0.0.1:8090/api/productivity/timers")
+        self.assertEqual(res_list.status_code, 200)
+        timers = res_list.json()["timers"]
+        self.assertTrue(any(t["id"] == timer_id for t in timers))
+
+        # Cancel timer
+        res_del = requests.delete(f"http://127.0.0.1:8090/api/productivity/timers/{timer_id}")
+        self.assertEqual(res_del.status_code, 200)
+
+    def test_07_system_display_brightness_endpoint(self):
+        res = requests.get("http://127.0.0.1:8090/api/system/brightness")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("percent", res.json())
+
+    def test_08_weather_and_network_endpoints(self):
+        res_net = requests.get("http://127.0.0.1:8090/api/network/status")
+        self.assertEqual(res_net.status_code, 200)
+        self.assertTrue(res_net.json()["success"])
+
+        res_ping = requests.post("http://127.0.0.1:8090/api/network/ping", json={"host": "1.1.1.1"})
+        self.assertEqual(res_ping.status_code, 200)
+        self.assertIn("summary", res_ping.json())
+
+        res_weather = requests.get("http://127.0.0.1:8090/api/weather")
+        self.assertEqual(res_weather.status_code, 200)
+        self.assertIn("summary", res_weather.json())
+
 if __name__ == "__main__":
     unittest.main()

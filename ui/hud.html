@@ -352,6 +352,136 @@
         }
 
         .loop-toggle input { cursor: pointer; }
+
+        /* Tactical Mission Drawer */
+        .tactical-drawer {
+            position: fixed;
+            top: 0;
+            right: -450px;
+            width: 450px;
+            height: 100vh;
+            background: rgba(3, 12, 24, 0.96);
+            border-left: 2px solid var(--arc-blue);
+            box-shadow: -10px 0 30px rgba(0, 240, 255, 0.3);
+            z-index: 100;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            backdrop-filter: blur(14px);
+        }
+
+        .tactical-drawer.open {
+            right: 0;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--arc-blue);
+            padding-bottom: 8px;
+        }
+
+        .drawer-title {
+            font-size: 0.95rem;
+            color: var(--neon-gold);
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .drawer-close {
+            background: transparent;
+            border: 1px solid var(--danger-red);
+            color: var(--danger-red);
+            padding: 3px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .drawer-tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            padding-bottom: 6px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #a5f3fc;
+            padding: 4px 8px;
+            font-size: 0.72rem;
+            cursor: pointer;
+            border-radius: 2px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--arc-blue);
+            color: var(--dark-bg);
+            border-color: var(--arc-blue);
+            box-shadow: 0 0 10px var(--arc-blue);
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 0.8rem;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .card-box {
+            background: rgba(0, 20, 38, 0.65);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            padding: 10px;
+            border-radius: 3px;
+        }
+
+        .card-box h4 {
+            color: var(--neon-gold);
+            font-size: 0.82rem;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 10, 20, 0.7);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 2px;
+        }
+
+        .timer-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 10, 20, 0.7);
+            border: 1px solid rgba(255, 183, 3, 0.3);
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 2px;
+        }
+
+        .range-slider {
+            width: 100%;
+            accent-color: var(--arc-blue);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -386,12 +516,15 @@
     </div>
 
     <div class="quick-bar">
+        <div class="quick-chip" onclick="toggleTacticalDrawer()" style="border-color:var(--neon-gold); color:var(--neon-gold);">⚡ MISSION DRAWER</div>
+        <div class="quick-chip" onclick="quickCmd('weather')">WEATHER</div>
+        <div class="quick-chip" onclick="quickCmd('list tasks')">TASKS</div>
+        <div class="quick-chip" onclick="quickCmd('set timer for 5 minutes')">+5M TIMER</div>
+        <div class="quick-chip" onclick="quickCmd('read screen')">READ SCREEN</div>
+        <div class="quick-chip" onclick="quickCmd('network status')">NETWORK</div>
         <div class="quick-chip" onclick="quickCmd('diagnostic check')">DIAGNOSTIC</div>
         <div class="quick-chip" onclick="quickCmd('capture screen')">CAPTURE SCREEN</div>
-        <div class="quick-chip" onclick="quickCmd('volume up')">VOLUME +10%</div>
-        <div class="quick-chip" onclick="quickCmd('mute')">MUTE AUDIO</div>
-        <div class="quick-chip" onclick="quickCmd('open terminal')">LAUNCH TERMINAL</div>
-        <div class="quick-chip" onclick="quickCmd('open editor')">LAUNCH CODE</div>
+        <div class="quick-chip" onclick="quickCmd('open terminal')">TERMINAL</div>
     </div>
 
     <div class="main-stage">
@@ -474,6 +607,133 @@
                 <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
                 <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
                 <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+            </div>
+        </div>
+    <!-- Tactical Mission Drawer -->
+    <div class="tactical-drawer" id="tacticalDrawer">
+        <div class="drawer-header">
+            <div class="drawer-title">⚡ TACTICAL MISSION DRAWER</div>
+            <button class="drawer-close" onclick="toggleTacticalDrawer()">CLOSE ✕</button>
+        </div>
+
+        <div class="drawer-tabs">
+            <button class="tab-btn active" id="btnTabTasks" onclick="switchDrawerTab('tabTasks')">TASKS</button>
+            <button class="tab-btn" id="btnTabTimers" onclick="switchDrawerTab('tabTimers')">TIMERS</button>
+            <button class="tab-btn" id="btnTabDisplay" onclick="switchDrawerTab('tabDisplay')">DISPLAY & POWER</button>
+            <button class="tab-btn" id="btnTabWeather" onclick="switchDrawerTab('tabWeather')">WEATHER</button>
+            <button class="tab-btn" id="btnTabNetwork" onclick="switchDrawerTab('tabNetwork')">NETWORK</button>
+            <button class="tab-btn" id="btnTabVision" onclick="switchDrawerTab('tabVision')">SCREEN OCR</button>
+        </div>
+
+        <!-- Tab 1: Tasks -->
+        <div class="tab-content active" id="tabTasks">
+            <div class="card-box">
+                <h4>NEW MISSION OBJECTIVE</h4>
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <input type="text" id="newTodoInput" placeholder="Directive description..." style="font-size:0.8rem; padding:4px 8px;">
+                    <select id="newTodoPriority" style="padding:4px 6px; font-size:0.75rem;">
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <button onclick="drawerAddTodo()" style="width:100%; padding:5px; font-size:0.75rem;">+ ADD OBJECTIVE</button>
+            </div>
+            <div class="card-box" style="flex:1;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <h4>ACTIVE TASK BOARD</h4>
+                    <button onclick="drawerClearCompletedTodos()" style="padding:2px 6px; font-size:0.68rem; border-color:var(--danger-red); color:var(--danger-red);">CLEAR DONE</button>
+                </div>
+                <div id="drawerTodoList" style="max-height:220px; overflow-y:auto;">Loading objectives...</div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Timers -->
+        <div class="tab-content" id="tabTimers">
+            <div class="card-box">
+                <h4>QUICK COUNTDOWNS</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                    <button onclick="drawerStartTimer(60, '1-Minute Checkpoint')" style="padding:5px; font-size:0.75rem;">+1 MINUTE</button>
+                    <button onclick="drawerStartTimer(300, '5-Minute Alert')" style="padding:5px; font-size:0.75rem;">+5 MINUTES</button>
+                    <button onclick="drawerStartTimer(900, '15-Minute Protocol')" style="padding:5px; font-size:0.75rem;">+15 MINUTES</button>
+                    <button onclick="drawerStartTimer(1800, '30-Minute Check')" style="padding:5px; font-size:0.75rem;">+30 MINUTES</button>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <input type="number" id="customTimerSecs" placeholder="Seconds" min="5" value="120" style="width:80px; font-size:0.8rem; padding:4px 6px; background:rgba(0,20,40,0.85); border:1px solid var(--arc-blue); color:var(--arc-blue);">
+                    <input type="text" id="customTimerLabel" placeholder="Label" value="Directive" style="flex:1; font-size:0.8rem; padding:4px 6px;">
+                    <button onclick="drawerStartCustomTimer()" style="padding:4px 8px; font-size:0.75rem;">START</button>
+                </div>
+            </div>
+            <div class="card-box" style="flex:1;">
+                <h4>ACTIVE COUNTDOWN QUEUE</h4>
+                <div id="drawerTimerList" style="max-height:240px; overflow-y:auto;">No active timers.</div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Display & Power -->
+        <div class="tab-content" id="tabDisplay">
+            <div class="card-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <h4>DISPLAY ILLUMINATION</h4>
+                    <span id="drawerBrightnessVal" style="color:var(--neon-gold); font-weight:bold;">50%</span>
+                </div>
+                <input type="range" id="drawerBrightnessSlider" min="1" max="100" value="50" class="range-slider" oninput="onDrawerBrightnessSlide(this.value)" onchange="onDrawerBrightnessChange(this.value)">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-top:8px;">
+                    <button onclick="drawerSetBrightness(25)" style="padding:4px; font-size:0.72rem;">25%</button>
+                    <button onclick="drawerSetBrightness(50)" style="padding:4px; font-size:0.72rem;">50%</button>
+                    <button onclick="drawerSetBrightness(75)" style="padding:4px; font-size:0.72rem;">75%</button>
+                    <button onclick="drawerSetBrightness(100)" style="padding:4px; font-size:0.72rem;">100%</button>
+                </div>
+            </div>
+            <div class="card-box">
+                <h4>WORKSTATION PERIMETER</h4>
+                <p style="color:#a5f3fc; font-size:0.75rem; margin-bottom:8px;">Immediately lock the active Wayland desktop session.</p>
+                <button onclick="drawerLockSession()" style="width:100%; padding:8px; font-size:0.8rem; border-color:var(--danger-red); color:var(--danger-red); background:rgba(255,51,102,0.1);">🔒 LOCK WORKSTATION</button>
+            </div>
+            <div class="card-box">
+                <h4>POWER CELL STATUS</h4>
+                <div id="drawerPowerStatus" style="font-size:0.75rem; color:#a5f3fc; line-height:1.4;">Inspecting power telemetry...</div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Weather -->
+        <div class="tab-content" id="tabWeather">
+            <div class="card-box">
+                <h4>ATMOSPHERIC TELEMETRY</h4>
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <input type="text" id="weatherLocationInput" placeholder="Location (empty for local)..." style="flex:1; font-size:0.8rem; padding:4px 8px;">
+                    <button onclick="drawerRefreshWeather()" style="padding:4px 10px; font-size:0.75rem;">SCAN</button>
+                </div>
+                <div id="drawerWeatherCard" style="font-size:0.78rem; line-height:1.5; color:#a5f3fc;">Awaiting atmospheric scan...</div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Network -->
+        <div class="tab-content" id="tabNetwork">
+            <div class="card-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <h4>NETWORK UPLINK</h4>
+                    <button onclick="drawerRefreshNetwork()" style="padding:2px 6px; font-size:0.7rem;">REFRESH</button>
+                </div>
+                <div id="drawerNetworkInfo" style="font-size:0.75rem; line-height:1.5; color:#a5f3fc;">Scanning network telemetry...</div>
+            </div>
+            <div class="card-box">
+                <h4>ICMP PING DIAGNOSTIC</h4>
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <input type="text" id="pingHostInput" value="1.1.1.1" placeholder="Host / IP..." style="flex:1; font-size:0.8rem; padding:4px 8px;">
+                    <button onclick="drawerRunPing()" style="padding:4px 10px; font-size:0.75rem;">TEST</button>
+                </div>
+                <div id="drawerPingResult" style="font-size:0.75rem; color:var(--neon-gold);">Ping ready.</div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Screen OCR -->
+        <div class="tab-content" id="tabVision">
+            <div class="card-box">
+                <h4>OPTICAL CHARACTER RECOGNITION</h4>
+                <p style="color:#a5f3fc; font-size:0.75rem; margin-bottom:8px;">Captures active screen buffer and runs local Tesseract OCR.</p>
+                <button onclick="drawerRunOCR()" style="width:100%; padding:8px; font-size:0.8rem; margin-bottom:8px;">👁️ SCAN ACTIVE DISPLAY</button>
+                <div id="drawerOcrSnippet" style="background:rgba(0,10,20,0.85); border:1px solid rgba(0,240,255,0.2); padding:8px; max-height:220px; overflow-y:auto; font-size:0.72rem; color:#a5f3fc; white-space:pre-wrap;">No OCR scan performed yet.</div>
             </div>
         </div>
     </div>
@@ -896,6 +1156,328 @@
         setInterval(fetchTelemetry, 3000);
         fetchTelemetry();
         connectWebSocket();
+
+        // ==========================================
+        // Tactical Mission Drawer Logic
+        // ==========================================
+        const tacticalDrawer = document.getElementById('tacticalDrawer');
+        let drawerOpen = false;
+        let activeTimersCache = [];
+
+        function toggleTacticalDrawer() {
+            drawerOpen = !drawerOpen;
+            if (drawerOpen) {
+                tacticalDrawer.classList.add('open');
+                loadDrawerTodos();
+                loadDrawerTimers();
+                loadDrawerDisplay();
+                drawerRefreshWeather();
+                drawerRefreshNetwork();
+            } else {
+                tacticalDrawer.classList.remove('open');
+            }
+        }
+
+        function switchDrawerTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+
+            const tabMap = {
+                'tabTasks': 'btnTabTasks',
+                'tabTimers': 'btnTabTimers',
+                'tabDisplay': 'btnTabDisplay',
+                'tabWeather': 'btnTabWeather',
+                'tabNetwork': 'btnTabNetwork',
+                'tabVision': 'btnTabVision'
+            };
+            const btn = document.getElementById(tabMap[tabId]);
+            if (btn) btn.classList.add('active');
+
+            if (tabId === 'tabTasks') loadDrawerTodos();
+            if (tabId === 'tabTimers') loadDrawerTimers();
+            if (tabId === 'tabDisplay') loadDrawerDisplay();
+            if (tabId === 'tabWeather') drawerRefreshWeather();
+            if (tabId === 'tabNetwork') drawerRefreshNetwork();
+        }
+
+        // 1. Mission Todos
+        async function loadDrawerTodos() {
+            const listDiv = document.getElementById('drawerTodoList');
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const todos = data.todos || [];
+                    if (todos.length === 0) {
+                        listDiv.innerHTML = '<div style="color:#64748b; font-style:italic;">No active directives registered.</div>';
+                        return;
+                    }
+                    listDiv.innerHTML = todos.map(t => `
+                        <div class="todo-item">
+                            <div>
+                                <span style="color:var(--neon-gold); font-weight:bold;">#${t.id}</span>
+                                <span style="margin-left:4px;">${t.task}</span>
+                                <span style="font-size:0.65rem; color:#64748b; margin-left:6px;">[${t.priority}]</span>
+                            </div>
+                            <button onclick="drawerCompleteTodo(${t.id})" style="padding:2px 6px; font-size:0.68rem;">DONE</button>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                listDiv.innerHTML = '<div style="color:var(--danger-red);">Failed to load tasks.</div>';
+            }
+        }
+
+        async function drawerAddTodo() {
+            const inp = document.getElementById('newTodoInput');
+            const prio = document.getElementById('newTodoPriority');
+            const task = inp.value.trim();
+            if (!task) return;
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task: task, priority: prio.value })
+                });
+                if (res.ok) {
+                    inp.value = '';
+                    loadDrawerTodos();
+                    logMsg(`Task added: "${task}"`, false);
+                }
+            } catch(e){}
+        }
+
+        async function drawerCompleteTodo(id) {
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos/${id}/complete`, { method: 'POST' });
+                if (res.ok) {
+                    loadDrawerTodos();
+                    logMsg(`Objective #${id} completed.`, false);
+                }
+            } catch(e){}
+        }
+
+        async function drawerClearCompletedTodos() {
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/todos/completed`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadDrawerTodos();
+                    logMsg(`Cleared completed objectives.`, false);
+                }
+            } catch(e){}
+        }
+
+        // 2. Countdown Timers
+        async function loadDrawerTimers() {
+            const listDiv = document.getElementById('drawerTimerList');
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers`);
+                if (res.ok) {
+                    const data = await res.json();
+                    activeTimersCache = data.timers || [];
+                    renderDrawerTimers();
+                }
+            } catch(e) {
+                listDiv.innerHTML = '<div style="color:var(--danger-red);">Timer link offline.</div>';
+            }
+        }
+
+        function renderDrawerTimers() {
+            const listDiv = document.getElementById('drawerTimerList');
+            if (!activeTimersCache || activeTimersCache.length === 0) {
+                listDiv.innerHTML = '<div style="color:#64748b; font-style:italic;">No active countdowns.</div>';
+                return;
+            }
+            listDiv.innerHTML = activeTimersCache.map(t => `
+                <div class="timer-card">
+                    <div>
+                        <div style="color:var(--neon-gold); font-weight:bold;">${t.label}</div>
+                        <div style="font-size:0.75rem; color:#a5f3fc;">T-Minus: ${t.remaining_seconds}s</div>
+                    </div>
+                    <button onclick="drawerCancelTimer('${t.id}')" style="padding:2px 6px; font-size:0.68rem; border-color:var(--danger-red); color:var(--danger-red);">CANCEL</button>
+                </div>
+            `).join('');
+        }
+
+        async function drawerStartTimer(secs, label) {
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ seconds: parseInt(secs), label: label })
+                });
+                if (res.ok) {
+                    loadDrawerTimers();
+                    logMsg(`Timer set: ${secs}s (${label})`, false);
+                }
+            } catch(e){}
+        }
+
+        function drawerStartCustomTimer() {
+            const secs = document.getElementById('customTimerSecs').value || 60;
+            const label = document.getElementById('customTimerLabel').value || 'Directive';
+            drawerStartTimer(secs, label);
+        }
+
+        async function drawerCancelTimer(id) {
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/productivity/timers/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadDrawerTimers();
+                    logMsg(`Timer cancelled.`, false);
+                }
+            } catch(e){}
+        }
+
+        // Ticker for timers
+        setInterval(() => {
+            if (activeTimersCache.length > 0) {
+                activeTimersCache.forEach(t => {
+                    t.remaining_seconds = Math.max(0, t.remaining_seconds - 1);
+                });
+                renderDrawerTimers();
+            }
+        }, 1000);
+
+        // 3. Display & Power
+        async function loadDrawerDisplay() {
+            try {
+                const resB = await fetch(`${BACKEND_BASE}/api/system/brightness`);
+                if (resB.ok) {
+                    const dataB = await resB.json();
+                    document.getElementById('drawerBrightnessSlider').value = dataB.percent;
+                    document.getElementById('drawerBrightnessVal').textContent = dataB.percent + '%';
+                }
+                const resP = await fetch(`${BACKEND_BASE}/api/system/power`);
+                if (resP.ok) {
+                    const dataP = await resP.json();
+                    document.getElementById('drawerPowerStatus').textContent = dataP.status_text || 'Nominal AC Power';
+                }
+            } catch(e){}
+        }
+
+        function onDrawerBrightnessSlide(val) {
+            document.getElementById('drawerBrightnessVal').textContent = val + '%';
+        }
+
+        async function onDrawerBrightnessChange(val) {
+            drawerSetBrightness(val);
+        }
+
+        async function drawerSetBrightness(pct) {
+            try {
+                document.getElementById('drawerBrightnessSlider').value = pct;
+                document.getElementById('drawerBrightnessVal').textContent = pct + '%';
+                const res = await fetch(`${BACKEND_BASE}/api/system/brightness`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ percent: parseInt(pct) })
+                });
+                if (res.ok) {
+                    logMsg(`Illumination calibrated to ${pct}%.`, false);
+                }
+            } catch(e){}
+        }
+
+        async function drawerLockSession() {
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/system/lock`, { method: 'POST' });
+                if (res.ok) {
+                    logMsg(`Perimeter secured. Session locked.`, false);
+                }
+            } catch(e){}
+        }
+
+        // 4. Weather
+        async function drawerRefreshWeather() {
+            const loc = document.getElementById('weatherLocationInput').value.trim();
+            const card = document.getElementById('drawerWeatherCard');
+            card.textContent = 'Scanning atmospheric metrics...';
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/weather?location=${encodeURIComponent(loc)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.temp_c !== undefined) {
+                        card.innerHTML = `
+                            <div style="color:var(--neon-gold); font-weight:bold; font-size:0.9rem;">📍 ${data.location}</div>
+                            <div style="font-size:1.1rem; color:#fff; margin:4px 0;">🌡️ ${data.temp_c}°C <span style="font-size:0.75rem; color:#a5f3fc;">(Feels like ${data.feels_like_c}°C)</span></div>
+                            <div>Condition: <span style="color:#00ff88;">${data.condition}</span></div>
+                            <div>Humidity: ${data.humidity}% | Winds: ${data.wind_kmph} km/h</div>
+                        `;
+                    } else {
+                        card.textContent = data.summary || 'Weather scan unavailable.';
+                    }
+                }
+            } catch(e) {
+                card.textContent = 'Atmospheric telemetry link failed.';
+            }
+        }
+
+        // 5. Network
+        async function drawerRefreshNetwork() {
+            const info = document.getElementById('drawerNetworkInfo');
+            info.textContent = 'Probing network interfaces...';
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/network/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    info.innerHTML = `
+                        <div>Type: <span style="color:var(--neon-gold);">${data.connection_type}</span></div>
+                        <div>Local IP: <span style="color:#00ff88;">${data.local_ip}</span></div>
+                        <div>Traffic: ⬆️ ${data.bytes_sent_mb} MB Sent | ⬇️ ${data.bytes_recv_mb} MB Recv</div>
+                    `;
+                }
+            } catch(e) {
+                info.textContent = 'Network diagnostic offline.';
+            }
+        }
+
+        async function drawerRunPing() {
+            const host = document.getElementById('pingHostInput').value.trim() || '1.1.1.1';
+            const resDiv = document.getElementById('drawerPingResult');
+            resDiv.textContent = `Pinging ${host}...`;
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/network/ping`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host: host })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    resDiv.textContent = data.summary;
+                    resDiv.style.color = data.success ? 'var(--neon-gold)' : 'var(--danger-red)';
+                }
+            } catch(e) {
+                resDiv.textContent = 'Ping test failed.';
+            }
+        }
+
+        // 6. Vision OCR
+        async function drawerRunOCR() {
+            const snip = document.getElementById('drawerOcrSnippet');
+            snip.textContent = 'Executing screen capture and Tesseract OCR...';
+            try {
+                const res = await fetch(`${BACKEND_BASE}/api/screen/ocr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.text) {
+                        snip.textContent = data.text.substring(0, 1500) + (data.text.length > 1500 ? '\n...[TRUNCATED]' : '');
+                        logMsg(`Optical OCR scanned ${data.char_count} characters from active display.`, false);
+                    } else {
+                        snip.textContent = data.error || 'No text extracted.';
+                    }
+                }
+            } catch(e) {
+                snip.textContent = 'Vision OCR failed.';
+            }
+        }
     </script>
 </body>
 </html>

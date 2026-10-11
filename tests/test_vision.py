@@ -3,7 +3,7 @@ import sys
 import os
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
-from vision import capture_screen_state
+from vision import capture_screen_state, read_screen_text
 
 class TestVision(unittest.TestCase):
     def test_screen_capture_execution(self):
@@ -14,6 +14,11 @@ class TestVision(unittest.TestCase):
             self.assertTrue(os.path.exists(res["path"]))
             self.assertGreater(res["width"], 0)
             self.assertGreater(res["height"], 0)
+
+    def test_screen_ocr(self):
+        res = read_screen_text()
+        self.assertIn("success", res)
+        self.assertIn("text", res)
 
 if __name__ == "__main__":
     unittest.main()
