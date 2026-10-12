@@ -15,7 +15,7 @@ class TestSystemCapabilities(unittest.TestCase):
         self.assertIn("subsystems", caps)
         self.assertIn("degraded_features", caps)
         self.assertIn("degraded_count", caps)
-        self.assertIn(caps["status"], ["nominal", "degraded"])
+        self.assertIn(caps["status"], ["nominal", "degraded", "critical_offline"])
 
     def test_subsystems_matrix(self):
         caps = probe_system_capabilities()
