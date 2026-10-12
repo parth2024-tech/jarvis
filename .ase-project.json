@@ -1,7 +1,8 @@
 {
   "name": "JARVIS",
-  "version": "3.7.0",
-  "description": "Industrial-grade autonomous personal AI assistant (AI operating layer) with FastAPI backend, secure sandbox execution, layered SQLite/LanceDB memory, WebSocket streaming telemetry, Alexa for PC neural TTS, multimodal OCR vision, productivity task/timer registry, display/power controls, live weather, network diagnostics, and cinematic Stark HUD.",
+  "version": "3.8.0",
+  "description": "Industrial-grade on-demand AI operating layer with FastAPI backend, allowlist sandbox execution, layered SQLite/LanceDB memory, CSWSH-protected WebSocket telemetry, Edge-TTS neural speech, optical screen OCR, productivity task/timer registry, display/power controls, live weather, network diagnostics, and cinematic Stark HUD.",
+
   "tech_stack": [
     "Python 3.14.7",
     "FastAPI (backend API server)",

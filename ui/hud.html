@@ -943,11 +943,22 @@
             animateVisualizer(false);
         }
 
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return String(str ?? '');
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function logMsg(text, isUser = false) {
             const time = new Date().toLocaleTimeString();
             const color = isUser ? '#ffb703' : '#00f0ff';
             const speaker = isUser ? 'YOU > ' : 'ALEXA > ';
-            log.innerHTML += `<br><span style="color:${color}">[${time}] ${speaker}</span>${text}`;
+            const safeText = escapeHtml(text);
+            log.innerHTML += `<br><span style="color:${color}">[${time}] ${speaker}</span>${safeText}`;
             log.scrollTop = log.scrollHeight;
         }
 
@@ -975,17 +986,31 @@
         // J.A.R.V.I.S. Security Bearer Authentication
         let authToken = localStorage.getItem("jarvis_auth_token") || "";
 
-        async function initAuthToken() {
-            try {
-                const res = await fetch(`${BACKEND_BASE}/api/auth/token`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.token) {
-                        authToken = data.token;
-                        localStorage.setItem("jarvis_auth_token", authToken);
-                    }
+        function initAuthToken() {
+            // 1. Check URL hash (#token=...) to allow secure local launcher injection without HTTP query log exposure
+            if (window.location.hash && window.location.hash.includes("token=")) {
+                const match = window.location.hash.match(/token=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    authToken = match[1];
+                    localStorage.setItem("jarvis_auth_token", authToken);
+                    try {
+                        history.replaceState(null, null, window.location.pathname + window.location.search);
+                    } catch(e) {}
+                    return;
                 }
-            } catch(e) {}
+            }
+
+            // 2. Check localStorage or prompt securely once
+            if (!authToken) {
+                setTimeout(() => {
+                    const entered = prompt("J.A.R.V.I.S. Security Protocol Active:\nPlease enter your Bearer Token (found in ~/.jarvis_auth_token on host):");
+                    if (entered && entered.trim()) {
+                        authToken = entered.trim();
+                        localStorage.setItem("jarvis_auth_token", authToken);
+                        logMsg("Security credentials verified and saved to local session storage.", false);
+                    }
+                }, 500);
+            }
         }
 
         function getAuthHeaders() {
@@ -1002,6 +1027,7 @@
         // Neural Text-to-Speech Engine
         async function speak(text) {
             stopSpeaking();
+            stopListening(); // Pause speech recognition to prevent acoustic self-confirmation
             const selectedProfile = voiceSelect.value;
             const cleanText = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
@@ -1261,8 +1287,8 @@
                         <div class="todo-item">
                             <div>
                                 <span style="color:var(--neon-gold); font-weight:bold;">#${t.id}</span>
-                                <span style="margin-left:4px;">${t.task}</span>
-                                <span style="font-size:0.65rem; color:#64748b; margin-left:6px;">[${t.priority}]</span>
+                                <span style="margin-left:4px;">${escapeHtml(t.task)}</span>
+                                <span style="font-size:0.65rem; color:#64748b; margin-left:6px;">[${escapeHtml(t.priority)}]</span>
                             </div>
                             <button onclick="drawerCompleteTodo(${t.id})" style="padding:2px 6px; font-size:0.68rem;">DONE</button>
                         </div>
@@ -1345,7 +1371,7 @@
                 return `
                 <div class="timer-card">
                     <div>
-                        <div style="color:var(--neon-gold); font-weight:bold;">${t.label}</div>
+                        <div style="color:var(--neon-gold); font-weight:bold;">${escapeHtml(t.label)}</div>
                         <div style="font-size:0.75rem; color:#a5f3fc;">T-Minus: ${rem}s</div>
                     </div>
                     <button onclick="drawerCancelTimer('${t.id}')" style="padding:2px 6px; font-size:0.68rem; border-color:var(--danger-red); color:var(--danger-red);">CANCEL</button>
@@ -1456,10 +1482,10 @@
                     const data = await res.json();
                     if (data.success && data.temp_c !== undefined) {
                         card.innerHTML = `
-                            <div style="color:var(--neon-gold); font-weight:bold; font-size:0.9rem;">📍 ${data.location}</div>
-                            <div style="font-size:1.1rem; color:#fff; margin:4px 0;">🌡️ ${data.temp_c}°C <span style="font-size:0.75rem; color:#a5f3fc;">(Feels like ${data.feels_like_c}°C)</span></div>
-                            <div>Condition: <span style="color:#00ff88;">${data.condition}</span></div>
-                            <div>Humidity: ${data.humidity}% | Winds: ${data.wind_kmph} km/h</div>
+                            <div style="color:var(--neon-gold); font-weight:bold; font-size:0.9rem;">📍 ${escapeHtml(data.location)}</div>
+                            <div style="font-size:1.1rem; color:#fff; margin:4px 0;">🌡️ ${escapeHtml(data.temp_c)}°C <span style="font-size:0.75rem; color:#a5f3fc;">(Feels like ${escapeHtml(data.feels_like_c)}°C)</span></div>
+                            <div>Condition: <span style="color:#00ff88;">${escapeHtml(data.condition)}</span></div>
+                            <div>Humidity: ${escapeHtml(data.humidity)}% | Winds: ${escapeHtml(data.wind_kmph)} km/h</div>
                         `;
                     } else {
                         card.textContent = data.summary || 'Weather scan unavailable.';
@@ -1479,9 +1505,9 @@
                 if (res.ok) {
                     const data = await res.json();
                     info.innerHTML = `
-                        <div>Type: <span style="color:var(--neon-gold);">${data.connection_type}</span></div>
-                        <div>Local IP: <span style="color:#00ff88;">${data.local_ip}</span></div>
-                        <div>Traffic: ⬆️ ${data.bytes_sent_mb} MB Sent | ⬇️ ${data.bytes_recv_mb} MB Recv</div>
+                        <div>Type: <span style="color:var(--neon-gold);">${escapeHtml(data.connection_type)}</span></div>
+                        <div>Local IP: <span style="color:#00ff88;">${escapeHtml(data.local_ip)}</span></div>
+                        <div>Traffic: ⬆️ ${escapeHtml(data.bytes_sent_mb)} MB Sent | ⬇️ ${escapeHtml(data.bytes_recv_mb)} MB Recv</div>
                     `;
                 }
             } catch(e) {

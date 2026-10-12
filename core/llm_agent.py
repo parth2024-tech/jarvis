@@ -36,17 +36,15 @@ PENDING_CONFIRMATIONS = {}
 
 def check_or_request_confirmation(action_id: str, challenge_msg: str, q_lower: str) -> tuple[bool, str]:
     now = time.time()
-    # Clean expired
+    # Clean expired confirmations
     for k in list(PENDING_CONFIRMATIONS.keys()):
         if PENDING_CONFIRMATIONS[k] <= now:
             del PENDING_CONFIRMATIONS[k]
 
-    if "confirm" in q_lower or "proceed" in q_lower or q_lower == "yes":
-        if action_id in PENDING_CONFIRMATIONS:
+    if action_id in PENDING_CONFIRMATIONS:
+        if any(w in q_lower for w in ["confirm", "proceed", "yes", "i confirm", "execute"]):
             del PENDING_CONFIRMATIONS[action_id]
             return True, ""
-    if q_lower.startswith("confirm ") or q_lower.startswith("force "):
-        return True, ""
 
     PENDING_CONFIRMATIONS[action_id] = now + 60.0
     return False, challenge_msg
@@ -455,9 +453,16 @@ RESPONSE (As J.A.R.V.I.S.):"""
 
     latency = round((time.time() - start_time) * 1000, 2)
     is_pending = bool(tool_result and isinstance(tool_result, dict) and tool_result.get("status") == "confirmation_required")
+    if is_pending:
+        tier = "tier_3_sensitive"
+    elif intent in ["media_control", "productivity_todo", "productivity_timer", "power_display"]:
+        tier = "tier_2_reversible"
+    else:
+        tier = "tier_1_informational"
+
     return {
         "status": "pending_confirmation" if is_pending else "success",
-        "tier": "tier_3_sensitive" if is_pending else "tier_1_reversible",
+        "tier": tier,
         "intent": intent,
         "response": response,
         "tool_result": tool_result,

@@ -63,9 +63,9 @@ ALLOWED_ORIGINS = {
     "http://127.0.0.1:8090",
     "http://localhost:8090",
     "https://127.0.0.1:8090",
-    "https://localhost:8090",
-    "null"  # Browsers send 'null' for file:// URLs
+    "https://localhost:8090"
 }
+
 
 class HostValidationMiddleware(BaseHTTPMiddleware):
     """
@@ -160,3 +160,31 @@ async def require_auth(request: Request):
             headers={"WWW-Authenticate": "Bearer"}
         )
     return True
+
+def verify_websocket_connection(websocket, allowed_port: int = 8090) -> bool:
+    """
+    Guards WebSocket handshake against cross-site WebSocket hijacking (CSWSH)
+    and DNS rebinding by verifying Host and Origin headers.
+    """
+    allowed_hosts = set(ALLOWED_HOSTS)
+    if allowed_port != 8090:
+        allowed_hosts.add(f"127.0.0.1:{allowed_port}")
+        allowed_hosts.add(f"localhost:{allowed_port}")
+
+    allowed_origins = set(ALLOWED_ORIGINS)
+    if allowed_port != 8090:
+        allowed_origins.add(f"http://127.0.0.1:{allowed_port}")
+        allowed_origins.add(f"http://localhost:{allowed_port}")
+
+    # 1. Host header validation
+    host = websocket.headers.get("host", "").split(",")[0].strip()
+    if host and host not in allowed_hosts:
+        return False
+
+    # 2. Origin header validation
+    origin = websocket.headers.get("origin")
+    if origin and origin not in allowed_origins:
+        return False
+
+    return True
+

@@ -149,10 +149,22 @@ import re
 
 def sanitize_untrusted_content(text: str) -> str:
     """
-    Escapes and sanitizes untrusted external OCR or web text to prevent
-    prompt injection tag breakouts.
+    Escapes and isolates untrusted external OCR or web text to prevent
+    delimiter breakouts and prompt injection directives.
     """
-    cleaned = text.replace("<untrusted_external_content>", "").replace("</untrusted_external_content>", "")
+    # Robustly escape closing and opening isolation tags case-insensitively
+    cleaned = re.sub(
+        r"<\s*/\s*untrusted_external_content\s*>",
+        "&lt;/untrusted_external_content&gt;",
+        text,
+        flags=re.IGNORECASE
+    )
+    cleaned = re.sub(
+        r"<\s*untrusted_external_content[^>]*>",
+        "&lt;untrusted_external_content&gt;",
+        cleaned,
+        flags=re.IGNORECASE
+    )
     cleaned = re.sub(r"<\s*system[^>]*>.*?<\s*/\s*system\s*>", "[FILTERED_INJECTION_TAG]", cleaned, flags=re.IGNORECASE | re.DOTALL)
     cleaned = re.sub(r"\[\s*SYSTEM(?:\s+DIRECTIVE)?[^\]]*\]", "[FILTERED_INJECTION_TAG]", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"```\s*system\b.*?```", "[FILTERED_INJECTION_TAG]", cleaned, flags=re.IGNORECASE | re.DOTALL)

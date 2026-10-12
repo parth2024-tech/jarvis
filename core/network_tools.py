@@ -4,7 +4,10 @@ import re
 import psutil
 import urllib.request
 
-HOST_REGEX = re.compile(r"^[a-zA-Z0-9.-]+$")
+# Strict RFC 1123 hostname, IPv4, and IPv6 regex rejecting leading hyphens and trailing newlines
+HOST_REGEX = re.compile(
+    r"^(?!-)(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|[a-zA-Z0-9]{1,63}|(?:[0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4})\Z"
+)
 
 def get_network_status() -> dict:
     """
@@ -101,18 +104,19 @@ def ping_latency(host: str = "1.1.1.1") -> dict:
     Performs ICMP ping with strict hostname regex validation.
     Also falls back to multi-target socket probe if ICMP is filtered.
     """
-    clean_host = host.strip()
-    if not HOST_REGEX.match(clean_host):
+    if not host or not HOST_REGEX.match(host):
         return {
             "success": False,
-            "error": "Invalid host syntax: must contain only alphanumeric characters, dots, and dashes.",
+            "error": "Invalid host syntax: must be a valid IPv4/IPv6 address or RFC 1123 hostname without leading hyphens.",
             "is_online": False,
             "summary": "Ping target rejected due to invalid hostname syntax, Sir."
         }
+    clean_host = host
+
 
     try:
         res = subprocess.run(
-            ["ping", "-c", "2", "-W", "2", clean_host],
+            ["ping", "-c", "2", "-W", "2", "--", clean_host],
             capture_output=True, text=True, timeout=4.0
         )
         if res.returncode == 0:

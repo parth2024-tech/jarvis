@@ -6,7 +6,11 @@ import re
 
 SANDBOX_LOG = "/home/thor/Desktop/JARVIS/memory/audit_trail.log"
 
-# Industrial-grade security policy: Comprehensive regex pattern blocking destructive disk operations, fork bombs, and raw device writes
+ALLOWED_BINARIES = {
+    "echo", "git", "uptime", "uname", "df", "free", "date", "whoami", "ls"
+}
+
+# Secondary defense-in-depth: Prohibited argument patterns
 DANGEROUS_PATTERNS = [
     r"rm\s+-[rRf]*\s+[/~]+",  # rm -rf / or rm -rf ~
     r"mkfs",                  # formatting filesystems
@@ -19,15 +23,23 @@ DANGEROUS_PATTERNS = [
 
 def secure_execute(command: str, timeout: int = 15) -> dict:
     """
-    Executes terminal commands with industrial-grade least-privilege sandboxing,
-    regex-based security policy enforcement, timeout protection, and strict SQLite/file audit logging.
+    Executes commands using an explicit binary allowlist policy,
+    shlex argument parsing, zero shell invocation (shell=False),
+    bounded timeouts, and persistent audit logging.
     """
     os.makedirs(os.path.dirname(SANDBOX_LOG), exist_ok=True)
     start_time = time.time()
     
     cmd_stripped = command.strip()
-    
-    # Advanced Security Policy Check
+    if not cmd_stripped:
+        return {
+            "success": False,
+            "output": "ERROR: Empty command directive received.",
+            "exit_code": 1,
+            "duration_ms": 0.0
+        }
+
+    # Secondary regex check
     for pattern in DANGEROUS_PATTERNS:
         if re.search(pattern, cmd_stripped, re.IGNORECASE):
             audit_log(command, "BLOCKED_SECURITY_VIOLATION", 0.0)
@@ -39,8 +51,30 @@ def secure_execute(command: str, timeout: int = 15) -> dict:
             }
 
     try:
-        # Use subprocess with shlex split for safe command parsing
-        args = shlex.split(command)
+        args = shlex.split(cmd_stripped)
+    except Exception as e:
+        audit_log(command, "PARSE_ERROR", 0.0)
+        return {
+            "success": False,
+            "output": f"SECURITY EXCEPTION: Failed to safely parse command arguments: {e}",
+            "exit_code": 1,
+            "duration_ms": 0.0
+        }
+
+    if not args:
+        return {"success": False, "output": "ERROR: No executable specified.", "exit_code": 1, "duration_ms": 0.0}
+
+    binary = os.path.basename(args[0])
+    if binary not in ALLOWED_BINARIES:
+        audit_log(command, f"BLOCKED_UNAUTHORIZED_BINARY_{binary}", 0.0)
+        return {
+            "success": False,
+            "output": f"SECURITY EXCEPTION: Command binary '{binary}' is not permitted under the strict execution policy allowlist.",
+            "exit_code": 1,
+            "duration_ms": 0.0
+        }
+
+    try:
         result = subprocess.run(
             args,
             stdout=subprocess.PIPE,
@@ -81,6 +115,7 @@ def secure_execute(command: str, timeout: int = 15) -> dict:
             "exit_code": -1,
             "duration_ms": duration
         }
+
 
 def audit_log(command: str, status: str, duration_ms: float):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")

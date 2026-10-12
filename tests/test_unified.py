@@ -25,7 +25,7 @@ class TestJarvisUnifiedCore(unittest.TestCase):
         ready = False
         for _ in range(20):
             try:
-                res = requests.get("http://127.0.0.1:8090/api/telemetry", timeout=1)
+                res = requests.get("http://127.0.0.1:8090/api/health", timeout=1)
                 if res.status_code == 200:
                     ready = True
                     break
@@ -39,8 +39,18 @@ class TestJarvisUnifiedCore(unittest.TestCase):
         cls.server_process.terminate()
         cls.server_process.wait()
 
-    def test_01_telemetry_endpoint(self):
-        res = requests.get("http://127.0.0.1:8090/api/telemetry")
+    def test_01_health_and_telemetry_endpoints(self):
+        # Health probe is public
+        res_health = requests.get("http://127.0.0.1:8090/api/health")
+        self.assertEqual(res_health.status_code, 200)
+        self.assertEqual(res_health.json()["status"], "healthy")
+
+        # Telemetry requires authentication
+        res_unauth = requests.get("http://127.0.0.1:8090/api/telemetry")
+        self.assertEqual(res_unauth.status_code, 401)
+
+        # Authenticated telemetry
+        res = requests.get("http://127.0.0.1:8090/api/telemetry", headers=AUTH_HEADERS)
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertIn("reactor_stability", data)
@@ -50,6 +60,7 @@ class TestJarvisUnifiedCore(unittest.TestCase):
         # Sensitive endpoint without auth token must return 401
         res = requests.post("http://127.0.0.1:8090/api/command", json={"query": "ping", "context": "hud"})
         self.assertEqual(res.status_code, 401)
+
 
     def test_02_command_diagnostic(self):
         payload = {"query": "system diagnostic check", "context": "hud"}

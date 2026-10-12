@@ -82,12 +82,22 @@ def _timer_worker(timer_id: str, delay_seconds: float, label: str):
     except Exception:
         pass
 
+MAX_ACTIVE_TIMERS = 50
+
 def set_timer(duration_seconds: int, label: str = "General Directive") -> dict:
     """
     Schedules an autonomous background countdown timer persisted in SQLite.
     Survives server restarts and provides absolute timestamp coordinates.
     """
-    sec = max(1, int(duration_seconds))
+    with _timer_lock:
+        if len(ACTIVE_TIMERS) >= MAX_ACTIVE_TIMERS:
+            return {
+                "success": False,
+                "error": f"Active timer capacity exceeded (maximum {MAX_ACTIVE_TIMERS} concurrent timers)."
+            }
+
+    sec = max(1, min(86400, int(duration_seconds)))
+    clean_label = (label or "General Directive").strip()[:100]
     timer_id = str(uuid.uuid4())[:8]
     now = time.time()
     expires_at = now + sec
@@ -98,7 +108,7 @@ def set_timer(duration_seconds: int, label: str = "General Directive") -> dict:
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO timers (id, label, duration_seconds, expires_at, status, created_at) VALUES (?, ?, ?, ?, 'active', ?)",
-            (timer_id, label, sec, expires_at, now)
+            (timer_id, clean_label, sec, expires_at, now)
         )
         conn.commit()
         conn.close()
@@ -107,11 +117,12 @@ def set_timer(duration_seconds: int, label: str = "General Directive") -> dict:
 
     timer_record = {
         "id": timer_id,
-        "label": label,
+        "label": clean_label,
         "duration_seconds": sec,
         "expires_at": expires_at,
         "created_at": now
     }
+
 
     with _timer_lock:
         ACTIVE_TIMERS[timer_id] = timer_record

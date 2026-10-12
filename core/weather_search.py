@@ -3,10 +3,18 @@ import json
 import urllib.parse
 import time
 
-# In-Memory 10-Minute Caches
+# In-Memory 10-Minute Bounded Caches (LRU/FIFO Eviction max 100 items)
 _WEATHER_CACHE = {}  # {loc_key: (timestamp, data)}
 _KNOWLEDGE_CACHE = {} # {query_key: (timestamp, data)}
 CACHE_TTL = 600  # 10 minutes
+MAX_CACHE_ENTRIES = 100
+
+def _cache_set(cache_dict: dict, key: str, value: tuple):
+    if len(cache_dict) >= MAX_CACHE_ENTRIES:
+        oldest_key = next(iter(cache_dict))
+        cache_dict.pop(oldest_key, None)
+    cache_dict[key] = value
+
 
 def get_weather(location: str = "") -> dict:
     """
@@ -51,7 +59,7 @@ def get_weather(location: str = "") -> dict:
                 "wind_kmph": wind_kmph,
                 "summary": summary
             }
-            _WEATHER_CACHE[cache_key] = (now, result)
+            _cache_set(_WEATHER_CACHE, cache_key, (now, result))
             return result
     except Exception:
         pass
@@ -67,7 +75,7 @@ def get_weather(location: str = "") -> dict:
                 "location": loc_clean or "Local Coordinates",
                 "summary": f"Current weather reading: {raw}, Sir."
             }
-            _WEATHER_CACHE[cache_key] = (now, result)
+            _cache_set(_WEATHER_CACHE, cache_key, (now, result))
             return result
     except Exception as e:
         return {"success": False, "error": str(e), "summary": "Atmospheric telemetry link unavailable, Sir."}
@@ -106,7 +114,7 @@ def lookup_encyclopedia_abstract(query: str) -> dict:
                     "source": source,
                     "summary": f"According to {source}: {abstract}"
                 }
-                _KNOWLEDGE_CACHE[cache_key] = (now, result)
+                _cache_set(_KNOWLEDGE_CACHE, cache_key, (now, result))
                 return result
 
             # Check related topics
@@ -119,7 +127,7 @@ def lookup_encyclopedia_abstract(query: str) -> dict:
                     "source": source,
                     "summary": f"Knowledge base reports: {first_rel}"
                 }
-                _KNOWLEDGE_CACHE[cache_key] = (now, result)
+                _cache_set(_KNOWLEDGE_CACHE, cache_key, (now, result))
                 return result
     except Exception as e:
         return {"success": False, "error": str(e), "summary": ""}
@@ -128,7 +136,7 @@ def lookup_encyclopedia_abstract(query: str) -> dict:
         "success": False,
         "summary": f"No direct encyclopedia abstract found for '{clean_q}'. (Note: Searches direct factual summaries, not generic web pages), Sir."
     }
-    _KNOWLEDGE_CACHE[cache_key] = (now, result)
+    _cache_set(_KNOWLEDGE_CACHE, cache_key, (now, result))
     return result
 
 # Backward compatibility alias

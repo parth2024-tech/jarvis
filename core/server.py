@@ -8,7 +8,7 @@ import threading
 from typing import Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response, JSONResponse, FileResponse
 from pydantic import BaseModel, Field
 
 from sandbox import secure_execute
@@ -31,7 +31,8 @@ from network_tools import get_network_status, ping_latency, verify_internet_conn
 from system_capabilities import probe_system_capabilities
 from security_guard import (
     AUTH_TOKEN, verify_token, require_auth,
-    HostValidationMiddleware, OriginValidationMiddleware
+    HostValidationMiddleware, OriginValidationMiddleware,
+    verify_websocket_connection
 )
 
 PORT = int(os.environ.get("JARVIS_PORT", 8090))
@@ -48,15 +49,14 @@ app.add_middleware(HostValidationMiddleware, allowed_port=PORT)
 # 2. Origin Validation Middleware (CSRF & Cross-Site Fetch Defense)
 app.add_middleware(OriginValidationMiddleware, allowed_port=PORT)
 
-# 3. Restrictive CORS (Local loopback and local file only)
+# 3. Restrictive CORS (Strict loopback origin only - no null)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         f"http://127.0.0.1:{PORT}",
         f"http://localhost:{PORT}",
         f"https://127.0.0.1:{PORT}",
-        f"https://localhost:{PORT}",
-        "null"
+        f"https://localhost:{PORT}"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -112,58 +112,80 @@ heartbeat.start()
 # Pydantic Request Models
 # ========================================================
 class QueryRequest(BaseModel):
-    query: str
+    query: str = Field(..., min_length=1, max_length=2000)
     context: str = "general"
 
 class TTSRequest(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=5000)
     voice: str = "alexa"
     rate: str = "+0%"
 
 class TodoCreateRequest(BaseModel):
-    task: str = Field(..., min_length=1)
-    priority: str = "normal"
+    task: str = Field(..., min_length=1, max_length=500)
+    priority: str = Field("normal", pattern="^(low|normal|medium|high|critical|urgent)$")
 
 class TodoUpdateRequest(BaseModel):
-    task: Optional[str] = None
-    priority: Optional[str] = None
-    status: Optional[str] = None
+    task: Optional[str] = Field(None, min_length=1, max_length=500)
+    priority: Optional[str] = Field(None, pattern="^(low|normal|medium|high|critical|urgent)$")
+    status: Optional[str] = Field(None, pattern="^(pending|completed|cancelled)$")
 
 class TimerCreateRequest(BaseModel):
     seconds: int = Field(..., ge=1, le=86400)
-    label: str = "Directive"
+    label: str = Field("Directive", min_length=1, max_length=100)
 
 class BrightnessRequest(BaseModel):
     percent: int = Field(..., ge=1, le=100)
 
 class ClipboardRequest(BaseModel):
-    text: str
+    text: str = Field(..., max_length=65536)
 
 class PingRequest(BaseModel):
-    host: str = "1.1.1.1"
+    host: str = Field("1.1.1.1", min_length=1, max_length=253)
 
 class OCRRequest(BaseModel):
-    question: Optional[str] = ""
+    question: Optional[str] = Field("", max_length=1000)
+
+class LockRequest(BaseModel):
+    confirm: bool = Field(False)
 
 # ========================================================
-# 1. System Health & Authentication Discovery
+# 1. System Health, Diagnostics & Secure HUD Serving
 # ========================================================
-@app.get("/api/auth/token")
-async def get_token_for_local_client():
+@app.get("/api/health")
+@app.get("/api/heartbeat")
+async def get_system_health():
     """
-    Returns the active bearer token for loopback clients connecting directly.
+    Minimal unauthenticated liveness and readiness probe.
+    Does not leak hardware parameters or system processes.
     """
-    return {"token": AUTH_TOKEN}
+    return {
+        "status": "healthy",
+        "service": "J.A.R.V.I.S.",
+        "timestamp": time.time()
+    }
 
-@app.get("/api/system/capabilities")
+@app.get("/")
+@app.get("/hud")
+async def serve_hud():
+    """
+    Serves the Stark Tactical HUD interface directly from the local server.
+    Ensures legitimate same-origin execution without trusting 'null' origins.
+    """
+    hud_path = os.path.join(JARVIS_DIR, "ui", "hud.html")
+    if os.path.exists(hud_path):
+        return FileResponse(hud_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="HUD asset not found on host filesystem")
+
+@app.get("/api/system/capabilities", dependencies=[Depends(require_auth)])
 async def get_system_capabilities():
     """
     Reports runtime system tools and protocol degradation matrix.
     """
     return probe_system_capabilities()
 
-@app.get("/api/telemetry")
+@app.get("/api/telemetry", dependencies=[Depends(require_auth)])
 async def get_telemetry():
+
     m = get_system_metrics()
     return {
         "reactor_stability": m["reactor_stability"],
@@ -297,7 +319,12 @@ async def api_set_brightness(req: BrightnessRequest):
     return set_brightness(req.percent)
 
 @app.post("/api/system/lock", dependencies=[Depends(require_auth)])
-async def api_lock_session():
+async def api_lock_session(req: LockRequest = LockRequest()):
+    if not req.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Tier 3 Confirmation Required: Explicit confirmation parameter {'confirm': true} required to lock workstation session."
+        )
     return lock_session()
 
 @app.get("/api/system/power", dependencies=[Depends(require_auth)])
@@ -312,6 +339,7 @@ async def api_get_weather(location: str = ""):
     return get_weather(location)
 
 @app.get("/api/knowledge", dependencies=[Depends(require_auth)])
+@app.get("/api/search", dependencies=[Depends(require_auth)])
 async def api_get_knowledge(query: str):
     return lookup_encyclopedia_abstract(query)
 
@@ -376,13 +404,30 @@ async def post_neural_tts(req: TTSRequest):
 # ========================================================
 @app.websocket("/ws/stream")
 async def websocket_endpoint(websocket: WebSocket):
-    # Authenticate via query param or initial handshake
-    token = websocket.query_params.get("token")
-    if not token or not verify_token(token):
+    # Guard against Cross-Site WebSocket Hijacking (CSWSH) and DNS Rebinding
+    if not verify_websocket_connection(websocket, allowed_port=PORT):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await websocket.accept()
+    # Authenticate via query param or initial handshake frame
+    token = websocket.query_params.get("token")
+    if not token or not verify_token(token):
+        # Allow client to authenticate in first message frame within 3 seconds
+        await websocket.accept()
+        try:
+            raw_auth = await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
+            auth_msg = json.loads(raw_auth)
+            if auth_msg.get("type") == "auth" and verify_token(auth_msg.get("token", "")):
+                token = auth_msg.get("token")
+            else:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+        except Exception:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    else:
+        await websocket.accept()
+
     try:
         while True:
             try:
@@ -411,6 +456,7 @@ async def websocket_endpoint(websocket: WebSocket):
         pass
     except Exception as e:
         print(f"[WS ERROR] {e}")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
