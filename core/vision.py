@@ -1,8 +1,11 @@
 import os
-import time
-import subprocess
+import re
 import shutil
-from PIL import Image, ImageEnhance, ImageOps
+import subprocess
+import time
+
+import requests
+from PIL import Image, ImageEnhance
 
 JARVIS_DIR = "/home/thor/Desktop/JARVIS"
 SCREENSHOT_PATH = os.path.join(JARVIS_DIR, "memory", "last_vision_capture.png")
@@ -145,7 +148,6 @@ def read_screen_text() -> dict:
             "text": ""
         }
 
-import re
 
 def sanitize_untrusted_content(text: str) -> str:
     """
@@ -172,14 +174,11 @@ def sanitize_untrusted_content(text: str) -> str:
 
 sanitize_ocr_text = sanitize_untrusted_content
 
-def summarize_screen(question: str = None) -> dict:
+def summarize_screen(question: str | None = None) -> dict:
     """
     Performs OCR and pipes the excerpt into local Ollama LLM with strict
     anti-prompt-injection isolation delimiters.
     """
-    import requests
-    import re
-
     ocr_res = read_screen_text()
     if not ocr_res["success"] or not ocr_res["text"]:
         return {

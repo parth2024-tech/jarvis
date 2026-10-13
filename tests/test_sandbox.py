@@ -1,9 +1,10 @@
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
-from sandbox import secure_execute, ALLOWED_BINARIES, SANDBOX_LOG
+from sandbox import SANDBOX_LOG, secure_execute
+
 
 class TestSandbox(unittest.TestCase):
     def test_01_allowed_binaries_execution(self):

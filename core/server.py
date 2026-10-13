@@ -1,39 +1,47 @@
-import uvicorn
-import sqlite3
-import time
-import os
 import asyncio
 import json
+import os
+import sqlite3
 import threading
+import time
 from typing import Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse, FileResponse
-from pydantic import BaseModel, Field
 
-from sandbox import secure_execute
+import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
 from heartbeat import ProactiveHeartbeat
-from vision import capture_screen_state, read_screen_text, summarize_screen
-from reflection import record_reflection, get_recent_reflections
-from system_telemetry import get_system_metrics, get_telemetry_summary
 from llm_agent import execute_agent_directive
-from vector_memory import store_memory, query_memories
-from voice_engine import synthesize_speech, get_voice_profiles
-from power_display import get_brightness, set_brightness, change_brightness, lock_session, get_power_status
-from productivity import (
-    set_timer, get_active_timers, cancel_timer,
-    add_todo, list_todos, get_todo, update_todo, delete_todo,
-    complete_todo, clear_completed_todos,
-    get_clipboard_text, set_clipboard_text
-)
-from weather_search import get_weather, lookup_encyclopedia_abstract
 from network_tools import get_network_status, ping_latency, verify_internet_connectivity
-from system_capabilities import probe_system_capabilities
-from security_guard import (
-    AUTH_TOKEN, verify_token, require_auth,
-    HostValidationMiddleware, OriginValidationMiddleware,
-    verify_websocket_connection
+from power_display import get_brightness, get_power_status, lock_session, set_brightness
+from productivity import (
+    add_todo,
+    cancel_timer,
+    clear_completed_todos,
+    complete_todo,
+    delete_todo,
+    get_active_timers,
+    get_clipboard_text,
+    get_todo,
+    list_todos,
+    set_clipboard_text,
+    set_timer,
+    update_todo,
 )
+from pydantic import BaseModel, Field
+from sandbox import secure_execute
+from security_guard import (
+    HostValidationMiddleware,
+    OriginValidationMiddleware,
+    require_auth,
+    verify_token,
+    verify_websocket_connection,
+)
+from system_capabilities import probe_system_capabilities
+from system_telemetry import get_system_metrics
+from vision import capture_screen_state, read_screen_text, summarize_screen
+from voice_engine import get_voice_profiles, synthesize_speech
+from weather_search import get_weather, lookup_encyclopedia_abstract
 
 PORT = int(os.environ.get("JARVIS_PORT", 8090))
 
@@ -143,10 +151,10 @@ class PingRequest(BaseModel):
     host: str = Field("1.1.1.1", min_length=1, max_length=253)
 
 class OCRRequest(BaseModel):
-    question: Optional[str] = Field("", max_length=1000)
+    question: Optional[str] = Field(default="", max_length=1000)
 
 class LockRequest(BaseModel):
-    confirm: bool = Field(False)
+    confirm: bool = Field(default=False)
 
 # ========================================================
 # 1. System Health, Diagnostics & Secure HUD Serving

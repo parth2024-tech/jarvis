@@ -1,14 +1,13 @@
+import argparse
 import os
 import sys
-import time
-import argparse
 
 JARVIS_DIR = "/home/thor/Desktop/JARVIS"
 sys.path.append(os.path.join(JARVIS_DIR, "core"))
 
-from voice_engine import play_speech_locally, get_voice_profiles
-from llm_agent import execute_agent_directive
-from system_telemetry import get_telemetry_summary
+from llm_agent import execute_agent_directive  # noqa: E402
+from voice_engine import get_voice_profiles, play_speech_locally  # noqa: E402
+
 
 def run_alexa_cli(voice_profile: str = "alexa"):
     """
@@ -17,13 +16,13 @@ def run_alexa_cli(voice_profile: str = "alexa"):
     """
     profiles = get_voice_profiles()
     selected = profiles.get(voice_profile, profiles["alexa"])
-    
+
     print("\n" + "="*60)
     print("   🎙️  ALEXA / J.A.R.V.I.S. VOICE ASSISTANT FOR PC")
     print(f"   Voice: {selected['name']} ({selected['description']})")
     print("="*60)
-    
-    greeting = f"Hello! I am your PC voice assistant. How can I help you today?"
+
+    greeting = "Hello! I am your PC voice assistant. How can I help you today?"
     print(f"\n[ALEXA] {greeting}")
     play_speech_locally(greeting, voice_profile)
 
@@ -40,7 +39,7 @@ def run_alexa_cli(voice_profile: str = "alexa"):
 
             result = execute_agent_directive(user_input)
             response_text = result["response"]
-            
+
             print(f"[ALEXA] {response_text}")
             print(f"        (Intent: {result['intent']} | Latency: {result['latency_ms']}ms)")
             play_speech_locally(response_text, voice_profile)

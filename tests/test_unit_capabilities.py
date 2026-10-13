@@ -1,8 +1,9 @@
-import unittest
 import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from system_capabilities import probe_system_capabilities
+
 
 class TestSystemCapabilities(unittest.TestCase):
     def test_capabilities_structure(self):

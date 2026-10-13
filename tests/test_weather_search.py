@@ -1,8 +1,9 @@
-import unittest
 import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from weather_search import get_weather, search_instant_knowledge
+
 
 class TestWeatherSearch(unittest.TestCase):
     def test_get_weather(self):

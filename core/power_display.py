@@ -1,6 +1,8 @@
-import subprocess
 import shutil
+import subprocess
+
 import psutil
+
 
 def get_brightness() -> dict:
     """

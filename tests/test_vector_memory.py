@@ -1,8 +1,9 @@
-import unittest
 import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
-from vector_memory import store_memory, query_memories, get_relevant_context
+from vector_memory import get_relevant_context, query_memories, store_memory
+
 
 class TestVectorMemory(unittest.TestCase):
     def test_store_and_query_memory(self):

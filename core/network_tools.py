@@ -1,8 +1,9 @@
-import subprocess
-import socket
 import re
-import psutil
+import socket
+import subprocess
 import urllib.request
+
+import psutil
 
 # Strict RFC 1123 hostname, IPv4, and IPv6 regex rejecting leading hyphens and trailing newlines
 HOST_REGEX = re.compile(

@@ -1,6 +1,8 @@
 import os
 import time
+
 import psutil
+
 
 def get_system_metrics() -> dict:
     """

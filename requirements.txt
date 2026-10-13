@@ -1,0 +1,16 @@
+# J.A.R.V.I.S. Core Dependencies
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+psutil>=6.0.0
+pillow>=10.4.0
+requests>=2.32.0
+edge-tts>=6.1.0
+
+# Optional Vector Database Backend
+lancedb>=0.14.0
+
+# Development, Linting & Testing
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+ruff>=0.7.0

@@ -1,8 +1,8 @@
-import os
-import hashlib
 import asyncio
+import hashlib
+import os
 import subprocess
-import shlex
+
 import edge_tts
 
 JARVIS_DIR = "/home/thor/Desktop/JARVIS"

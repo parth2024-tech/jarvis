@@ -1,14 +1,20 @@
-import unittest
 import sys
-import os
 import time
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from productivity import (
-    set_timer, get_active_timers, cancel_timer,
-    add_todo, list_todos, complete_todo, clear_completed_todos,
-    get_clipboard_text, set_clipboard_text
+    add_todo,
+    cancel_timer,
+    clear_completed_todos,
+    complete_todo,
+    get_active_timers,
+    get_clipboard_text,
+    list_todos,
+    set_clipboard_text,
+    set_timer,
 )
+
 
 class TestProductivity(unittest.TestCase):
     def test_timers(self):
@@ -64,7 +70,7 @@ class TestProductivity(unittest.TestCase):
         t_id = create_res["id"]
 
         # 2. Get todo
-        from productivity import get_todo, update_todo, delete_todo
+        from productivity import delete_todo, get_todo, update_todo
         res_get = get_todo(t_id)
         self.assertTrue(res_get["success"])
         item = res_get["todo"]

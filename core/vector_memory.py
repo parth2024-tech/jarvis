@@ -1,8 +1,9 @@
-import sqlite3
 import os
+import sqlite3
 import time
-import requests
+
 import numpy as np
+import requests
 
 JARVIS_DIR = "/home/thor/Desktop/JARVIS"
 DB_PATH = os.path.join(JARVIS_DIR, "memory", "jarvis_state.db")

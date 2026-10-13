@@ -1,8 +1,8 @@
-import subprocess
-import shlex
 import os
-import time
 import re
+import shlex
+import subprocess
+import time
 
 SANDBOX_LOG = "/home/thor/Desktop/JARVIS/memory/audit_trail.log"
 
@@ -29,7 +29,7 @@ def secure_execute(command: str, timeout: int = 15) -> dict:
     """
     os.makedirs(os.path.dirname(SANDBOX_LOG), exist_ok=True)
     start_time = time.time()
-    
+
     cmd_stripped = command.strip()
     if not cmd_stripped:
         return {
@@ -85,7 +85,7 @@ def secure_execute(command: str, timeout: int = 15) -> dict:
         duration = round((time.time() - start_time) * 1000, 2)
         status = "SUCCESS" if result.returncode == 0 else "NON_ZERO_EXIT"
         audit_log(command, status, duration)
-        
+
         # Combine stdout and stderr cleanly for diagnostic reporting
         combined_output = result.stdout
         if result.stderr and result.returncode != 0:

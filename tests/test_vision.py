@@ -1,9 +1,10 @@
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from vision import capture_screen_state, read_screen_text
+
 
 class TestVision(unittest.TestCase):
     def test_screen_capture_execution(self):

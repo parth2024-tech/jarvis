@@ -1,42 +1,41 @@
-# Python
+# ==============================================================================
+# J.A.R.V.I.S. (Iron Man Edition) — Project .gitignore
+# ==============================================================================
+
+# Python Bytecode & Environments
 __pycache__/
 *.py[cod]
 *$py.class
-*.png
-memory/*.db
-memory/*.log
-memory/tts_cache/
+*.so
+.venv/
+venv/
+ENV/
+env/
+
+# Test, Lint & Build Caches
 .pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Logs
-logs
+# J.A.R.V.I.S. Runtime Memory & Ephemeral Stores
+memory/*.db
+memory/*.db-shm
+memory/*.db-wal
+memory/*.log
+memory/*.png
+memory/tts_cache/
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
+# Sensitive Credentials & Local Overrides
+.env
+.env.local
+*.auth_token
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# System & Editor Specifics
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
+.vscode/
+*.swp
+*.swo

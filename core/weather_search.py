@@ -1,11 +1,11 @@
-import requests
-import json
-import urllib.parse
 import time
+import urllib.parse
+
+import requests
 
 # In-Memory 10-Minute Bounded Caches (LRU/FIFO Eviction max 100 items)
-_WEATHER_CACHE = {}  # {loc_key: (timestamp, data)}
-_KNOWLEDGE_CACHE = {} # {query_key: (timestamp, data)}
+_WEATHER_CACHE: dict[str, tuple[float, dict]] = {}  # {loc_key: (timestamp, data)}
+_KNOWLEDGE_CACHE: dict[str, tuple[float, dict]] = {}  # {query_key: (timestamp, data)}
 CACHE_TTL = 600  # 10 minutes
 MAX_CACHE_ENTRIES = 100
 
@@ -119,8 +119,10 @@ def lookup_encyclopedia_abstract(query: str) -> dict:
 
             # Check related topics
             related = data.get("RelatedTopics", [])
-            if related and isinstance(related[0], dict) and related[0].get("Text"):
-                first_rel = related[0].get("Text").strip()
+            if related and isinstance(related[0], dict):
+                rel_text = related[0].get("Text")
+                if isinstance(rel_text, str) and rel_text.strip():
+                    first_rel = rel_text.strip()
                 result = {
                     "success": True,
                     "heading": heading,

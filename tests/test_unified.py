@@ -1,8 +1,9 @@
-import unittest
-import requests
-import time
 import subprocess
 import sys
+import time
+import unittest
+
+import requests
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from security_guard import get_or_create_auth_token
@@ -80,7 +81,7 @@ class TestJarvisUnifiedCore(unittest.TestCase):
 
     def test_04_sandbox_security_violation_block(self):
         from sandbox import secure_execute
-        
+
         res = secure_execute("rm -rf /")
         self.assertFalse(res["success"])
         self.assertIn("SECURITY EXCEPTION", res["output"])

@@ -1,6 +1,7 @@
-import subprocess
-import shlex
 import os
+import shlex
+import subprocess
+
 from sandbox import secure_execute
 
 KNOWN_APPS = {
@@ -19,7 +20,7 @@ def send_notification(title: str, message: str, urgency: str = "normal") -> dict
     valid_urgencies = {"low", "normal", "critical"}
     urg = urgency if urgency in valid_urgencies else "normal"
     clean_title = f"J.A.R.V.I.S. // {title}"
-    
+
     try:
         subprocess.run(
             ["notify-send", clean_title, message, "-u", urg, "-a", "JARVIS"],
@@ -29,7 +30,7 @@ def send_notification(title: str, message: str, urgency: str = "normal") -> dict
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def launch_app(app_name: str, argument: str = None) -> dict:
+def launch_app(app_name: str, argument: str | None = None) -> dict:
     """
     Launches an application or opens a resource in the desktop environment.
     """

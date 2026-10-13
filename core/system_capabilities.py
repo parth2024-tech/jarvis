@@ -1,6 +1,8 @@
-import shutil
 import os
+import shutil
+
 import requests
+
 
 def probe_system_capabilities() -> dict:
     """

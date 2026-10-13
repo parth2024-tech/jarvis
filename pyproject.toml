@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis"
+version = "3.8.0"
+description = "Industrial-grade on-demand AI operating layer with FastAPI backend, allowlist sandbox execution, layered SQLite/LanceDB memory, CSWSH-protected WebSocket telemetry, Edge-TTS neural speech, optical screen OCR, and cinematic Stark HUD."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Thor" }
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.8.0",
+    "psutil>=6.0.0",
+    "pillow>=10.4.0",
+    "requests>=2.32.0",
+    "edge-tts>=6.1.0",
+]
+
+[project.optional-dependencies]
+vector = [
+    "lancedb>=0.14.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "core"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+ignore = [
+    "E501",  # line too long (handled by formatting)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core"]

@@ -1,8 +1,9 @@
-import unittest
 import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
-from power_display import get_brightness, change_brightness, get_power_status
+from power_display import get_brightness, get_power_status
+
 
 class TestPowerDisplay(unittest.TestCase):
     def test_get_brightness(self):

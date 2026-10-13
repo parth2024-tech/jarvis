@@ -1,8 +1,9 @@
-import unittest
 import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from network_tools import get_network_status, ping_latency
+
 
 class TestNetworkTools(unittest.TestCase):
     def test_get_network_status(self):

@@ -1,9 +1,9 @@
-import unittest
 import sys
-import os
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from system_telemetry import get_system_metrics, get_telemetry_summary
+
 
 class TestSystemTelemetry(unittest.TestCase):
     def test_metrics_structure(self):

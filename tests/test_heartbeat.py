@@ -1,9 +1,10 @@
-import unittest
 import sys
 import time
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
 from heartbeat import ProactiveHeartbeat
+
 
 class TestHeartbeat(unittest.TestCase):
     def test_heartbeat_lifecycle(self):

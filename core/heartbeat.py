@@ -1,7 +1,8 @@
-import time
-import sqlite3
 import os
+import sqlite3
 import threading
+import time
+
 from system_telemetry import get_system_metrics
 
 JARVIS_DIR = "/home/thor/Desktop/JARVIS"

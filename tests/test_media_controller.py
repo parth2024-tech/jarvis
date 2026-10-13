@@ -1,8 +1,9 @@
-import unittest
 import sys
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
-from media_controller import get_volume, set_volume, toggle_mute, control_playback, get_playback_info
+from media_controller import control_playback, get_playback_info, get_volume, set_volume
+
 
 class TestMediaController(unittest.TestCase):
     def test_get_volume_returns_structure(self):

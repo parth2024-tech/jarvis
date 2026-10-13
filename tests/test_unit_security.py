@@ -1,19 +1,12 @@
-import unittest
 import sys
-import re
+import unittest
 
 sys.path.append("/home/thor/Desktop/JARVIS/core")
-from security_guard import (
-    get_or_create_auth_token,
-    verify_token,
-    HostValidationMiddleware,
-    OriginValidationMiddleware,
-    ALLOWED_HOSTS,
-    ALLOWED_ORIGINS
-)
-from network_tools import HOST_REGEX, ping_latency
-from vision import sanitize_ocr_text
 from llm_agent import PENDING_CONFIRMATIONS, dispatch_pending_confirmation, route_and_execute
+from network_tools import HOST_REGEX, ping_latency
+from security_guard import ALLOWED_HOSTS, ALLOWED_ORIGINS, get_or_create_auth_token, verify_token
+from vision import sanitize_ocr_text
+
 
 class TestSecurityHardening(unittest.TestCase):
     def setUp(self):

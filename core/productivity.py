@@ -1,9 +1,10 @@
 import os
-import time
 import sqlite3
-import threading
-import uuid
 import subprocess
+import threading
+import time
+import uuid
+
 from app_controller import send_notification
 
 JARVIS_DIR = "/home/thor/Desktop/JARVIS"
@@ -50,7 +51,7 @@ init_productivity_schema()
 # ========================================================
 # 1. Persistent Timers Engine with Reboot Rehydration
 # ========================================================
-ACTIVE_TIMERS = {}
+ACTIVE_TIMERS: dict[str, dict] = {}
 _timer_lock = threading.Lock()
 
 def _timer_worker(timer_id: str, delay_seconds: float, label: str):
@@ -310,12 +311,17 @@ def get_todo(todo_id: int) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def update_todo(todo_id: int, task: str = None, priority: str = None, status: str = None) -> dict:
+def update_todo(
+    todo_id: int,
+    task: str | None = None,
+    priority: str | None = None,
+    status: str | None = None
+) -> dict:
     try:
         conn = get_db()
         cursor = conn.cursor()
-        fields = []
-        params = []
+        fields: list[str] = []
+        params: list[str | int | float] = []
         if task is not None:
             fields.append("task = ?")
             params.append(task.strip())

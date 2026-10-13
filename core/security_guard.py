@@ -1,8 +1,9 @@
-import os
-import secrets
 import hmac
 import json
-from fastapi import Request, HTTPException, status
+import os
+import secrets
+
+from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
