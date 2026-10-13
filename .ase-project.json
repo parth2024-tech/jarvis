@@ -79,7 +79,8 @@
     "Use parameterized SQL queries to prevent injection",
     "Use shlex.split for safe command parsing",
     "Log all sandboxed executions to audit_trail.log",
-    "Use SQLite for persistence, LanceDB for vector memory"
+    "Use SQLite for persistence, LanceDB for vector memory",
+    "Adopt durable state machine checkpoints, ephemeral container sandboxing, and out-of-band sentinel gates for autonomous agent operations"
   ],
   "agent_skills": {
     "directory": "/home/thor/skiils",
